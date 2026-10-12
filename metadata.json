@@ -1,0 +1,6 @@
+{
+  "name": "CyberShield CTF - Treinamento Corporativo",
+  "description": "Portal corporativo de treinamento em cibersegurança com desafios CTF práticos, simulador de phishing, ranking e relatórios de vulnerabilidades.",
+  "requestFramePermissions": ["notifications"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

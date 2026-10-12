@@ -1,0 +1,75 @@
+@import "tailwindcss";
+
+/* ── Design tokens: "Intercept Workbench" ───────────────────────────────
+   Dual-accent com semantica: laranja = ofensiva (atacar/enviar),
+   esmeralda = defesa (sucesso/seguro/flag). Fira Code = protocolo; Jakarta = prosa. */
+@theme {
+  --font-sans: 'Plus Jakarta Sans', ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-mono: 'Fira Code', ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --color-ink: #0a0d13;
+  --color-surface: #0f141c;
+  --color-surface-2: #141b25;
+  --color-line: #232c3a;
+  --color-line-soft: #19202b;
+
+  --color-offense: #ff6a3d;
+  --color-offense-soft: #ff8a5f;
+  --color-defense: #35d6a0;
+
+  --color-m-get: #35d6a0;
+  --color-m-post: #ff9f43;
+  --color-m-put: #52a8ff;
+  --color-m-delete: #ff5f6e;
+}
+
+@layer base {
+  html { color-scheme: dark; }
+  body {
+    font-family: var(--font-sans);
+    background: var(--color-ink);
+  }
+  code, pre, .font-mono { font-family: var(--font-mono); }
+
+  :focus-visible {
+    outline: 2px solid var(--color-offense);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+}
+
+/* Scrollbars discretas, estilo painel de ferramenta */
+::-webkit-scrollbar { width: 9px; height: 9px; }
+::-webkit-scrollbar-track { background: var(--color-ink); }
+::-webkit-scrollbar-thumb { background: #283241; border-radius: 6px; border: 2px solid var(--color-ink); }
+::-webkit-scrollbar-thumb:hover { background: #3a4659; }
+
+/* Flag detectada na resposta: realce esmeralda */
+.flag-hit {
+  color: #06110c;
+  background: var(--color-defense);
+  padding: 0 4px;
+  border-radius: 3px;
+  font-weight: 700;
+}
+
+/* Grade sutil de fundo para dar textura de "console" sem ruido */
+.workbench-grid {
+  background-image:
+    linear-gradient(to right, rgba(255,255,255,0.025) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255,255,255,0.025) 1px, transparent 1px);
+  background-size: 22px 22px;
+}
+
+/* Cursor piscando na barra de envio quando ocioso */
+@keyframes pulse-ring { 0%,100% { opacity: .5 } 50% { opacity: 1 } }
+.live-dot { animation: pulse-ring 2s ease-in-out infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
