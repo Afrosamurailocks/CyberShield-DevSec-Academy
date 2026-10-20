@@ -11,9 +11,9 @@ on:
   workflow_dispatch: {}
 
 permissions:
-  contents: read
-  # necessario para o POST em /dependency-graph/snapshots
-  id-token: write
+  # a Dependency Submission API exige "contents: write" no token da Action
+  # (ver https://docs.github.com/rest/dependency-graph/dependency-submission)
+  contents: write
 
 jobs:
   submit:
