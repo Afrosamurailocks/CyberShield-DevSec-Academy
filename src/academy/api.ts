@@ -57,11 +57,31 @@ export async function sendRequest(opts: {
 // ───────── Progresso (localStorage, por aluno) ─────────
 const KEY = 'cybershield.progress.v1';
 
+/** Valida a forma minima esperada antes de confiar no que veio do localStorage
+ * (SonarCloud tssecurity:S8475 — o storage pode ter sido adulterado manualmente
+ * pelo proprio aluno via DevTools; nunca confiamos cegamente no shape). */
+function isValidProgress(value: unknown): value is Progress {
+  if (typeof value !== 'object' || value === null) return false;
+  const solved = (value as { solved?: unknown }).solved;
+  if (typeof solved !== 'object' || solved === null) return false;
+  return Object.values(solved).every(
+    (entry) =>
+      typeof entry === 'object' &&
+      entry !== null &&
+      typeof (entry as { flag?: unknown }).flag === 'string' &&
+      typeof (entry as { at?: unknown }).at === 'string' &&
+      typeof (entry as { points?: unknown }).points === 'number',
+  );
+}
+
 export function loadProgress(): Progress {
   try {
     const raw = localStorage.getItem(KEY);
-    if (raw) return JSON.parse(raw) as Progress;
-  } catch { /* storage indisponivel */ }
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (isValidProgress(parsed)) return parsed;
+    }
+  } catch { /* storage indisponivel ou JSON invalido */ }
   return { solved: {} };
 }
 

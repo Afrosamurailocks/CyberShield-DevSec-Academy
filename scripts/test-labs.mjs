@@ -9,7 +9,9 @@
  */
 const B = 'http://localhost:4000/api';
 import crypto from 'node:crypto';
-const md5 = (s) => crypto.createHash('md5').update(s).digest('hex');
+// Replica o MESMO hash fraco do backend (server/db.ts) so para o teste calcular
+// o valor esperado e validar o exploit do lab A02 — nao e uso em producao.
+const md5 = (s) => crypto.createHash('md5').update(s).digest('hex'); // NOSONAR (javascript:S4790 — script de teste, espelha o alvo proposital do lab)
 const b64url = (s) => Buffer.from(s).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 const d64 = (s) => Buffer.from(s.replace(/-/g, '+').replace(/_/g, '/'), 'base64').toString();
 const signHS256 = (payload, secret) => {
@@ -20,8 +22,10 @@ const signHS256 = (payload, secret) => {
 };
 const flagIn = (s) => (String(s).match(/CYBER\{[^}]+\}/) || [null])[0];
 
+// `path` so vem de literais de teste definidos mais abaixo neste mesmo arquivo
+// (nunca de input externo); o destino e sempre o localhost do lab.
 const http = async (method, path, { body, headers } = {}) => {
-  const r = await fetch(B + path, {
+  const r = await fetch(B + path, { // NOSONAR (jssecurity:S8476 — path e literal interno do teste, nao input de usuario)
     method,
     headers: { ...(body ? { 'content-type': 'application/json' } : {}), ...(headers || {}) },
     body: body ? JSON.stringify(body) : undefined,

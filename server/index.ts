@@ -10,6 +10,8 @@ import { mountLabs } from './labs/routes.js';
 import { initDb, usingPostgres } from './db.js';
 
 const app = express();
+// Nao divulgar a versao/framework via header X-Powered-By (SonarCloud typescript:S5689).
+app.disable('x-powered-by');
 app.use(express.json({ limit: '256kb' }));
 
 // Banner de aviso em todas as respostas (ambiente de treino)

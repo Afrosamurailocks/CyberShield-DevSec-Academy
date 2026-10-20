@@ -16,8 +16,9 @@ import { DatabaseSync } from 'node:sqlite';
 import crypto from 'node:crypto';
 import pg from 'pg';
 
-/** MD5 sem salt — intencionalmente fraco (alvo dos labs). */
-export const md5 = (s: string) => crypto.createHash('md5').update(s).digest('hex');
+/** MD5 sem salt — intencionalmente fraco (alvo dos labs A02/A03). NAO corrigir:
+ * e o hash fraco que o lab A02 ensina o aluno a quebrar. */
+export const md5 = (s: string) => crypto.createHash('md5').update(s).digest('hex'); // NOSONAR (typescript:S4790 — proposital, ver comentario acima)
 
 /** true quando o backend ativo é o Postgres/Supabase (DATABASE_URL definido). */
 export const usingPostgres = !!process.env.DATABASE_URL;
