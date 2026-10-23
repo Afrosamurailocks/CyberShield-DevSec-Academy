@@ -42,6 +42,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-[var(--color-ink)] text-slate-100 font-sans selection:bg-[var(--color-offense)] selection:text-slate-950">
+      <a href="#conteudo" className="skip-link">Pular para o conteúdo</a>
       <div className="mx-auto flex min-h-screen max-w-[1600px]">
         {/* Sidebar fixa (desktop) */}
         <aside className="sticky top-0 hidden h-screen w-72 shrink-0 border-r border-[var(--color-line)] lg:block">
@@ -70,11 +71,12 @@ export default function App() {
               className="rounded-md p-1.5 text-slate-300 hover:bg-slate-800">
               <Menu size={20} aria-hidden="true" />
             </button>
-            <span className="text-sm font-bold">CyberShield DevSec Academy</span>
+            <img src="/brand/opah-logo-white.png" alt="Opah IT" className="h-5 w-auto" />
+            <span className="text-sm font-semibold text-slate-300">CyberShield DevSec Academy</span>
             <span className="ml-auto text-xs text-slate-400">{solvedIds.size}/{labs.length}</span>
           </header>
 
-          <main className="flex-1 px-4 py-6 sm:px-6 lg:px-8">
+          <main id="conteudo" className="flex-1 px-4 py-6 sm:px-6 lg:px-8">
             {/* aviso de ambiente */}
             <div className="mb-5 flex items-start gap-2 rounded-lg border border-amber-500/20 bg-amber-500/5 px-4 py-2 text-[12px] text-amber-200/90">
               <AlertTriangle size={14} className="mt-0.5 shrink-0 text-amber-400" aria-hidden="true" />

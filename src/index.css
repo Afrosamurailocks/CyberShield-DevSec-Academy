@@ -1,26 +1,41 @@
 @import "tailwindcss";
 
-/* ── Design tokens: "Intercept Workbench" ───────────────────────────────
-   Dual-accent com semantica: laranja = ofensiva (atacar/enviar),
-   esmeralda = defesa (sucesso/seguro/flag). Fira Code = protocolo; Jakarta = prosa. */
+/* ── Design tokens: identidade Opah IT ──────────────────────────────────
+   Paleta e tipografia dos relatorios Opah: laranja #ee7d30 / #f4a23f sobre grafite #1e1e20;
+   Poppins (titulos), Open Sans (texto), JetBrains Mono (codigo e protocolo).
+   Semantica preservada: laranja = acao/ofensiva, verde = defesa (sucesso/flag).
+   Os tons de cinza (slate) foram remapeados para neutros de grafite. */
 @theme {
-  --font-sans: 'Plus Jakarta Sans', ui-sans-serif, system-ui, -apple-system, sans-serif;
-  --font-mono: 'Fira Code', ui-monospace, SFMono-Regular, Menlo, monospace;
+  --font-sans: 'Open Sans', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-display: 'Poppins', 'Open Sans', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 
-  --color-ink: #0a0d13;
-  --color-surface: #0f141c;
-  --color-surface-2: #141b25;
-  --color-line: #232c3a;
-  --color-line-soft: #19202b;
+  --color-ink: #161618;
+  --color-surface: #1e1e20;
+  --color-surface-2: #27272b;
+  --color-line: #36363b;
+  --color-line-soft: #2a2a2e;
 
-  --color-offense: #ff6a3d;
-  --color-offense-soft: #ff8a5f;
+  --color-offense: #ee7d30;
+  --color-offense-soft: #f4a23f;
   --color-defense: #35d6a0;
 
   --color-m-get: #35d6a0;
-  --color-m-post: #ff9f43;
+  --color-m-post: #f4a23f;
   --color-m-put: #52a8ff;
   --color-m-delete: #ff5f6e;
+
+  --color-slate-50: #fafafa;
+  --color-slate-100: #f1f1f2;
+  --color-slate-200: #e2e2e4;
+  --color-slate-300: #c9c9cc;
+  --color-slate-400: #9a9aa0;
+  --color-slate-500: #6b6b70;
+  --color-slate-600: #55555a;
+  --color-slate-700: #3d3d42;
+  --color-slate-800: #2d2d30;
+  --color-slate-900: #1f1f22;
+  --color-slate-950: #161618;
 }
 
 @layer base {
@@ -28,8 +43,16 @@
   body {
     font-family: var(--font-sans);
     background: var(--color-ink);
+    line-height: 1.6;
+    font-optical-sizing: auto;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    font-variant-numeric: tabular-nums;
   }
-  code, pre, .font-mono { font-family: var(--font-mono); }
+  /* Titulos: peso 600-700, tracking levemente negativo e entrelinha justa */
+  h1, h2, h3, h4 { font-family: var(--font-display); font-weight: 600; letter-spacing: -0.01em; line-height: 1.25; text-wrap: balance; }
+  p { text-wrap: pretty; }
+  code, pre, .font-mono { font-family: var(--font-mono); font-variant-ligatures: none; font-variant-numeric: slashed-zero tabular-nums; }
 
   :focus-visible {
     outline: 2px solid var(--color-offense);
@@ -41,8 +64,16 @@
 /* Scrollbars discretas, estilo painel de ferramenta */
 ::-webkit-scrollbar { width: 9px; height: 9px; }
 ::-webkit-scrollbar-track { background: var(--color-ink); }
-::-webkit-scrollbar-thumb { background: #283241; border-radius: 6px; border: 2px solid var(--color-ink); }
-::-webkit-scrollbar-thumb:hover { background: #3a4659; }
+::-webkit-scrollbar-thumb { background: #3d3d42; border-radius: 6px; border: 2px solid var(--color-ink); }
+::-webkit-scrollbar-thumb:hover { background: #55555a; }
+
+/* Skip link: aparece apenas com foco de teclado */
+.skip-link {
+  position: absolute; left: 12px; top: -48px; z-index: 60;
+  padding: 8px 14px; border-radius: 8px; font-weight: 700; font-size: 13px;
+  background: var(--color-offense); color: #161618; transition: top .15s ease;
+}
+.skip-link:focus { top: 12px; }
 
 /* Flag detectada na resposta: realce esmeralda */
 .flag-hit {

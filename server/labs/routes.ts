@@ -139,12 +139,33 @@ export function mountLabs(api: Router): void {
 
   // ═══════════════ A04 — Insecure Design (token de reset previsivel) ═══════════════
   const a04 = Router();
+  // Log de auditoria do gateway de e-mail: confirma o ENVIO (destinatario/assunto/hora)
+  // mas MASCARA o link/token no conteudo — por politica de DLP, nem o log interno
+  // guarda o segredo em claro. Serve para o aluno "ver o e-mail existe" sem conseguir
+  // lê-lo: ele precisa continuar prevendo o token por /server-time.
+  const a04Mailbox = new Map<string, { sentAt: string }>();
   a04.get('/server-time', (_req, res) => res.json({ epochSeconds: Math.floor(Date.now() / 1000) }));
   a04.post('/forgot', async (req: Request, res: Response) => {
     const { username } = req.body ?? {};
-    await db.prepare('SELECT id FROM users WHERE username = ?').get(String(username ?? ''));
-    // nao revela se o usuario existe; o "link" (token) NAO e enviado ao cliente.
+    const u: any = await db.prepare('SELECT id FROM users WHERE username = ?').get(String(username ?? ''));
+    // nao revela se o usuario existe na resposta; mas registra o envio para o mailbox simulado.
+    if (u) a04Mailbox.set(String(username), { sentAt: new Date().toISOString() });
     res.status(202).json({ message: 'Se o usuário existir, enviaremos um link de redefinição por e-mail.' });
+  });
+  a04.get('/mailbox/:username', (req: Request, res: Response) => {
+    const sent = a04Mailbox.get(req.params.username);
+    if (!sent) return problem(res, 404, 'No Email', 'Nenhuma solicitação de redefinição foi enviada para este usuário ainda. Chame POST /api/a04/forgot primeiro.');
+    // FALHA DE DESIGN exposta aqui, de propósito: o e-mail FOI enviado (isso é real),
+    // mas o conteúdo com o token é mascarado — nem o log interno de auditoria guarda
+    // o segredo em claro. Ou seja: "ter acesso ao e-mail" nunca foi o caminho.
+    res.json({
+      to: `${req.params.username}@nexusvarejo.com.br`,
+      subject: 'Redefinição de senha — Nexus Varejo',
+      sentAt: sent.sentAt,
+      preview: 'Recebemos uma solicitação de redefinição de senha para sua conta. Use o link abaixo para continuar. Ele expira em 2 minutos.',
+      resetLink: 'https://portal.nexusvarejo.com.br/reset?token=••••••••••••',
+      note: 'Conteúdo mascarado pela política de DLP do gateway de e-mail — o token não fica visível nem neste log de auditoria.',
+    });
   });
   a04.post('/reset', async (req: Request, res: Response) => {
     const { username, token, newPassword } = req.body ?? {};
@@ -257,20 +278,44 @@ export function mountLabs(api: Router): void {
     res.json({ status: 'profile-imported', deserializationExecuted: false, profile: obj });
   });
 
-  // ═══════════════ A09 — Logging & Monitoring Failures (log injection) ═══════════════
+  // ═══════════════ A09 — Logging & Monitoring Failures (log injection -> sequestro do dashboard do SOC) ═══════════════
+  // Falha ENCADEADA, de propósito (A09 não é só "um \n"): (1) CRLF injection forja uma
+  // linha inteira de auditoria; (2) o PAINEL do SOC (dashboard) renderiza esse mesmo log
+  // cru como HTML, sem escapar nada — a mesma causa-raiz (confiar em entrada não
+  // confiável) quebra duas camadas: a trilha de auditoria E a ferramenta que o analista
+  // usa para lê-la. So as DUAS tecnicas combinadas (forjar o evento + injetar <script>)
+  // entregam a flag — forjar sozinho so da um eco narrativo, sem o segredo.
   const a09 = Router();
   let auditLog = '--- AUDIT TRAIL ---\n';
   a09.post('/login', (req: Request, res: Response) => {
     const username = String((req.body ?? {}).username ?? '');
-    auditLog += 'AUTH user=' + username + '\n'; // FALHA: entrada crua (CRLF/log injection)
+    auditLog += 'AUTH user=' + username + '\n'; // FALHA 1: entrada crua (CRLF/log injection)
     const forged = auditLog.split('\n').some((l) => /^AUDIT event=admin_login_success/.test(l.trim()));
     const body: any = { status: 'logged' };
-    // o SIEM ingenuo "confia" na trilha: um evento admin_login_success forjado dispara o
-    // fechamento automatico do incidente, devolvendo um token de clearance sensivel.
-    if (forged) body.incidentOverride = { status: 'closed', clearanceToken: secretOf('a09-log-injection') };
+    if (forged) {
+      // o SIEM ingenuo aceita a linha forjada, mas o clearance de verdade so sai
+      // quando um analista ABRE o dashboard (GET /api/a09/dashboard) — forjar o
+      // evento sozinho não é o fim da exploração, é só o primeiro passo.
+      body.incidentOverride = { status: 'closed', note: 'Evento de auditoria aceito pelo SIEM. O clearance de verdade só sai quando um analista abrir o painel — veja GET /api/a09/dashboard.' };
+    }
     res.json(body);
   });
   a09.get('/logs', (_req, res) => res.type('text/plain').send(auditLog));
+  a09.get('/dashboard', (_req, res) => {
+    const rows = auditLog.split('\n').filter(Boolean);
+    const forged = rows.some((r) => /^AUDIT event=admin_login_success/.test(r.trim()));
+    // FALHA 2: renderiza o log cru como HTML sem NENHUM escaping (nem &,<,> nem aspas).
+    const html = '<div class="soc-dashboard">\n' + rows.map((r) => `  <div class="log-row">${r}</div>`).join('\n') + '\n</div>';
+    const scripted = /<script\b[^>]*>[\s\S]*?<\/script>/i.test(html);
+    const hijacked = forged && scripted; // exige as DUAS tecnicas combinadas, nao uma isolada.
+    res.json({
+      renderedHtml: html,
+      note: hijacked
+        ? 'O <script> injetado no log executou na sessão do analista que abriu este painel.'
+        : 'Painel do SOC renderizado a partir do log cru, sem sanitização HTML — ainda sem a combinação completa (evento forjado + <script>).',
+      ...(hijacked ? { analystSession: { hijacked: true, clearanceToken: secretOf('a09-log-injection') } } : {}),
+    });
+  });
 
   // ═══════════════ A10 — SSRF (resolver mock da rede interna) ═══════════════
   const a10 = Router();

@@ -1,5 +1,17 @@
 import React, { useState } from 'react';
 import { Check, Copy } from 'lucide-react';
+import type { Lab } from '../types';
+
+/**
+ * Ordena pela ordem REAL de exploração (killChain.step), não pelo número OWASP.
+ * Alguns labs exigem tecnicamente um achado de um lab posterior na numeração OWASP
+ * (ex.: A08 exige a chave roubada no A10) — navegar por A01..A10 faria o aluno
+ * travar numa dependência que ainda não existe. Usado em Sidebar, LabCatalog e no
+ * "Continuar" do Dashboard para que a navegação siga sempre a ordem resolvível.
+ */
+export function byKillChainOrder(labs: Lab[]): Lab[] {
+  return [...labs].sort((a, b) => (a.killChain?.step ?? 99) - (b.killChain?.step ?? 99));
+}
 
 // Paleta por categoria OWASP (consistente em todo o app).
 export const OWASP_META: Record<string, { label: string; accent: string; ring: string; text: string }> = {

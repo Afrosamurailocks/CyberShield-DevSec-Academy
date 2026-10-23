@@ -1,7 +1,7 @@
 import React, { memo } from 'react';
-import { ShieldCheck, CheckCircle2, Trophy, LayoutGrid, Lock } from 'lucide-react';
+import { CheckCircle2, Trophy, LayoutGrid, Lock } from 'lucide-react';
 import type { Lab } from '../types';
-import { OWASP_META, ProgressRing } from './ui';
+import { OWASP_META, ProgressRing, byKillChainOrder } from './ui';
 
 interface SidebarProps {
   labs: Lab[];
@@ -15,19 +15,17 @@ interface SidebarProps {
 
 /** Navegação persistente estilo workbench: marca, progresso e lista de labs A01–A10. */
 export const Sidebar = memo(function Sidebar({ labs, solvedIds, activeId, totalPoints, maxPoints, onSelect, onNavigate }: SidebarProps) {
-  const ordered = [...labs].sort((a, b) => a.owaspId.localeCompare(b.owaspId));
+  const ordered = byKillChainOrder(labs);
   const go = (lab: Lab | null) => { onSelect(lab); onNavigate?.(); };
 
   return (
     <nav aria-label="Navegação dos laboratórios" className="flex h-full flex-col bg-[var(--color-surface)]">
       {/* Marca */}
-      <div className="flex items-center gap-2.5 border-b border-[var(--color-line)] px-4 py-4">
-        <div className="grid h-9 w-9 place-items-center rounded-lg bg-[var(--color-offense)]/15 ring-1 ring-[var(--color-offense)]/30">
-          <ShieldCheck size={20} className="text-[var(--color-offense)]" aria-hidden="true" />
-        </div>
-        <div className="min-w-0">
-          <h1 className="truncate text-sm font-bold leading-tight">CyberShield</h1>
-          <p className="truncate text-[11px] text-slate-400 leading-tight">DevSec Academy</p>
+      <div className="border-b border-[var(--color-line)] px-4 py-4">
+        <img src="/brand/opah-logo-white.png" alt="Opah IT" className="h-6 w-auto" />
+        <div className="mt-3 min-w-0">
+          <h1 className="truncate text-sm font-semibold leading-tight">CyberShield</h1>
+          <p className="truncate text-[11px] leading-tight text-slate-400">DevSec Academy</p>
         </div>
       </div>
 
@@ -52,7 +50,7 @@ export const Sidebar = memo(function Sidebar({ labs, solvedIds, activeId, totalP
 
       {/* Lista de labs */}
       <div className="mt-2 flex-1 overflow-y-auto px-2 pb-4">
-        <p className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-500">Laboratórios</p>
+        <p className="px-3 py-1.5 text-[11px] font-semibold text-slate-500">Laboratórios (ordem de exploração)</p>
         <ul className="space-y-0.5">
           {ordered.map((lab) => {
             const done = solvedIds.has(lab.id);

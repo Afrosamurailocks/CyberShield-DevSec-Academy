@@ -1,42 +1,92 @@
-import React from 'react';
-import { CheckCircle2, ChevronRight, ShieldAlert } from 'lucide-react';
+import React, { useState } from 'react';
+import { CheckCircle2, ChevronRight, Circle } from 'lucide-react';
 import type { Lab } from '../types';
-import { OWASP_META, DIFFICULTY_COLOR, Pill } from './ui';
+import { OWASP_META, byKillChainOrder } from './ui';
 
+type Filter = 'todos' | 'pendentes' | 'concluidos';
+const FILTERS: { id: Filter; label: string }[] = [
+  { id: 'todos', label: 'Todos' },
+  { id: 'pendentes', label: 'Pendentes' },
+  { id: 'concluidos', label: 'Concluídos' },
+];
+
+const DIFFICULTY: Record<string, { label: string; dot: string }> = {
+  Iniciante: { label: 'Iniciante', dot: 'bg-emerald-400' },
+  Intermediario: { label: 'Intermediário', dot: 'bg-amber-400' },
+  Avancado: { label: 'Avançado', dot: 'bg-rose-400' },
+};
+
+/** Catálogo em lista densa: leitura por colunas, uma linha por laboratório. */
 export function LabCatalog({ labs, solvedIds, onOpen }: {
   labs: Lab[]; solvedIds: Set<string>; onOpen: (lab: Lab) => void;
 }) {
-  const ordered = [...labs].sort((a, b) => a.owaspId.localeCompare(b.owaspId));
+  const [filter, setFilter] = useState<Filter>('todos');
+  const ordered = byKillChainOrder(labs)
+    .filter((l) => filter === 'todos' || (filter === 'concluidos') === solvedIds.has(l.id));
+
   return (
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3">
-      {ordered.map((lab) => {
-        const meta = OWASP_META[lab.owaspId];
-        const done = solvedIds.has(lab.id);
-        return (
-          <button key={lab.id} onClick={() => onOpen(lab)}
-            className={`group text-left rounded-xl border bg-slate-900/40 p-4 transition-all hover:bg-slate-900/80 hover:-translate-y-0.5 ${
-              done ? 'border-emerald-500/40' : 'border-slate-800 hover:border-slate-600'}`}>
-            <div className="flex items-center justify-between mb-3">
-              <span className={`inline-flex items-center gap-1 rounded-md ${meta.accent} px-2 py-0.5 text-xs font-bold text-slate-950`}>
-                {lab.owaspId}
-              </span>
-              {done
-                ? <CheckCircle2 size={18} className="text-emerald-400" />
-                : <ShieldAlert size={18} className="text-slate-600 group-hover:text-slate-400" />}
-            </div>
-            <h3 className="text-base font-semibold text-slate-100 leading-snug">{lab.title}</h3>
-            <p className={`mt-0.5 text-xs font-medium ${meta.text}`}>{lab.owaspTitle}</p>
-            <p className="mt-2 text-[13px] text-slate-400 line-clamp-2">{lab.objective}</p>
-            <div className="mt-3 flex flex-wrap items-center gap-1.5">
-              <Pill className={DIFFICULTY_COLOR[lab.difficulty]}>{lab.difficulty}</Pill>
-              <Pill className="border-slate-700 bg-slate-800/50 text-slate-400">{lab.cwe}</Pill>
-              <span className="ml-auto flex items-center gap-0.5 text-xs font-semibold text-slate-300">
-                {lab.points} pts <ChevronRight size={14} className="text-slate-500 group-hover:text-emerald-300 transition-colors" />
-              </span>
-            </div>
-          </button>
-        );
-      })}
-    </div>
+    <section aria-labelledby="catalog-title">
+      <div className="mb-3 flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h3 id="catalog-title" className="text-lg font-semibold">Laboratórios</h3>
+          <p className="text-xs text-slate-500">Uma falha real por categoria OWASP, na ordem em que a intrusão acontece.</p>
+        </div>
+        <div role="group" aria-label="Filtrar laboratórios" className="flex rounded-md border border-[var(--color-line)] p-0.5">
+          {FILTERS.map((f) => (
+            <button key={f.id} onClick={() => setFilter(f.id)} aria-pressed={filter === f.id}
+              className={`min-h-8 rounded px-3 text-xs font-medium transition-colors ${
+                filter === f.id ? 'bg-[var(--color-surface-2)] text-slate-100' : 'text-slate-400 hover:text-slate-200'}`}>
+              {f.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {ordered.length === 0 ? (
+        <p className="rounded-md border border-dashed border-[var(--color-line)] px-4 py-10 text-center text-sm text-slate-500">
+          {filter === 'concluidos' ? 'Nenhum laboratório concluído ainda. Abra o próximo laboratório para começar.' : 'Nenhum laboratório pendente.'}
+        </p>
+      ) : (
+        <div className="overflow-hidden rounded-md border border-[var(--color-line)] bg-[var(--color-surface)]">
+          <div className="hidden grid-cols-[64px_minmax(0,1.6fr)_minmax(0,1.2fr)_120px_96px_72px_24px] items-center gap-4 border-b border-[var(--color-line)] bg-[var(--color-surface-2)]/50 px-4 py-2 text-xs font-medium text-slate-500 md:grid">
+            <span>ID</span><span>Laboratório</span><span>Categoria</span><span>Nível</span><span>CWE</span><span className="text-right">Pontos</span><span />
+          </div>
+          <ul className="divide-y divide-[var(--color-line)]">
+            {ordered.map((lab) => {
+              const meta = OWASP_META[lab.owaspId];
+              const done = solvedIds.has(lab.id);
+              const diff = DIFFICULTY[lab.difficulty] ?? DIFFICULTY.Iniciante;
+              return (
+                <li key={lab.id}>
+                  <button onClick={() => onOpen(lab)}
+                    className="group grid w-full grid-cols-[48px_minmax(0,1fr)_auto] items-center gap-x-4 gap-y-1 px-4 py-3 text-left transition-colors hover:bg-[var(--color-surface-2)] md:grid-cols-[64px_minmax(0,1.6fr)_minmax(0,1.2fr)_120px_96px_72px_24px]">
+                    <span className="flex items-center gap-2">
+                      <span className={`h-4 w-0.5 rounded-full ${meta.accent}`} aria-hidden="true" />
+                      <span className="font-mono text-xs font-medium text-slate-300">{lab.owaspId}</span>
+                    </span>
+                    <span className="min-w-0">
+                      <span className="flex items-center gap-2">
+                        <span className="truncate text-sm font-medium text-slate-100">{lab.title}</span>
+                        {done
+                          ? <CheckCircle2 size={14} className="shrink-0 text-[var(--color-defense)]" aria-label="Resolvido" />
+                          : <Circle size={12} className="shrink-0 text-slate-600" aria-label="Não resolvido" />}
+                      </span>
+                      <span className="mt-0.5 block truncate text-xs text-slate-500 md:hidden">{lab.owaspTitle} · {diff.label} · {lab.cwe}</span>
+                    </span>
+                    <span className="hidden truncate text-[13px] text-slate-400 md:block">{lab.owaspTitle}</span>
+                    <span className="hidden items-center gap-2 text-[13px] text-slate-300 md:flex">
+                      <span className={`h-1.5 w-1.5 rounded-full ${diff.dot}`} aria-hidden="true" />{diff.label}
+                    </span>
+                    <span className="hidden font-mono text-xs text-slate-400 md:block">{lab.cwe}</span>
+                    <span className="text-right font-mono text-[13px] tabular-nums text-slate-300">{lab.points}</span>
+                    <ChevronRight size={14} className="hidden text-slate-600 transition-colors group-hover:text-slate-300 md:block" aria-hidden="true" />
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      )}
+    </section>
   );
 }

