@@ -23,9 +23,11 @@
 ## Sumário
 
 - [Visão geral](#visão-geral)
+- [Novidades desta versão](#novidades-desta-versão)
 - [Como funciona](#como-funciona)
 - [Laboratórios](#laboratórios)
 - [Kill chain](#kill-chain)
+- [Material do professor](#material-do-professor)
 - [Screenshots](#screenshots)
 - [Quick start](#quick-start)
 - [Scripts](#scripts)
@@ -47,6 +49,17 @@
 | **Ferramentas embutidas** | Console HTTP (repeater estilo Burp), workbench com Base64, JWT, hash, URL, CRLF, prototype pollution e `node-serialize` |
 | **Progresso** | Salvo no `localStorage` do navegador |
 | **Banco** | SQLite em memória (zero setup); Postgres/Supabase opcional |
+| **Identidade visual** | Opah IT (Poppins/Open Sans/JetBrains Mono, fontes locais em `public/fonts`; laranja `#ee7d30` / grafite `#1e1e20`) |
+
+## Novidades desta versão
+
+- **Identidade visual Opah IT** — tipografia e paleta trocadas para a marca (ver `src/index.css`); fontes auto-hospedadas em `public/fonts`, sem dependência de CDN.
+- **Dashboard e catálogo redesenhados** para um visual mais sóbrio (hairlines, raios pequenos, lista densa em vez de grade de cards).
+- **Navegação corrigida pela kill chain real**: sidebar, catálogo e o botão "Continuar" agora seguem a ordem de exploração (`killChain.step`), não o número OWASP — o A08 depende de um achado do A10, que vinha depois dele na lista antiga.
+- **Workbench de interceptação mais tolerante**: o parser de requisição crua não exige mais a linha em branco entre cabeçalhos e corpo (evita o erro genérico `Invalid name` ao editar a requisição à mão).
+- **A04 (reset de senha)** ganhou uma caixa de e-mail simulada (`GET /api/a04/mailbox/:username`) com o token mascarado por DLP — reforça que ler o e-mail não é o caminho; é preciso prever o token.
+- **A09 (log injection) redesenhado**: a exploração passou de um único `\n` para encadear log injection (CRLF) com uma falha de encoding no painel do SOC (`GET /api/a09/dashboard`), que renderiza o log como HTML sem escapar. Só a combinação evento forjado + `<script>` libera a flag.
+- **Gabarito do professor em PDF** — ver [Material do professor](#material-do-professor).
 
 ## Como funciona
 
@@ -73,7 +86,7 @@ As requisições de exemplo são *baselines* legítimos: respostas `401/400/403/
 | A06 | Componente desatualizado com CVE conhecido (prototype pollution) | CWE-1104 | Intermediário | 150 | 7 |
 | A07 | JWT com algoritmo `none` (ou segredo vazado) | CWE-347 | Avançado | 200 | 5 |
 | A08 | Desserialização insegura (`node-serialize` RCE) | CWE-502 | Avançado | 220 | 9 |
-| A09 | Log injection / forjando trilha de auditoria | CWE-117 | Intermediário | 150 | 10 |
+| A09 | Log injection → Stored XSS no dashboard do SOC | CWE-117 + CWE-79 | Intermediário | 150 | 10 |
 | A10 | SSRF para metadados internos | CWE-918 | Avançado | 200 | 8 |
 
 ## Kill chain
@@ -93,6 +106,12 @@ flowchart LR
   A08 --> A09["10 · A09<br/>Log injection<br/>cobertura de rastros"]
 ```
 
+## Material do professor
+
+[`docs/Gabarito_Professor_OWASP_Top10_CyberShield.pdf`](docs/Gabarito_Professor_OWASP_Top10_CyberShield.pdf) traz, para os 10 laboratórios, o objetivo, o caminho de exploração validado contra `scripts/test-labs.mjs`, a flag esperada e os critérios de correção (causa-raiz, impacto, código vulnerável/seguro, checklist). É gerado a partir de `server/labs/metadata.ts` — a mesma fonte que o backend usa para validar as flags — então qualquer mudança nos labs deve vir acompanhada de uma nova geração desse PDF.
+
+> 🔒 **Uso restrito ao corpo docente.** O arquivo contém todas as flags; não distribua aos alunos.
+
 ## Screenshots
 
 | Missão do lab | Workbench de ataque |
@@ -108,7 +127,7 @@ flowchart LR
 ```bash
 git clone https://github.com/Cyber-Opah/CyberShield-DevSec-Academy.git
 cd CyberShield-DevSec-Academy
-git checkout develop
+git checkout development
 
 npm install --legacy-peer-deps
 npm run dev
@@ -205,4 +224,4 @@ npm run lint           # type-check
 
 ---
 
-**Licença:** [inserir licença definida pela Opah IT]  ·  **Mantenedores:** [inserir time responsável]
+**Licença:** [inserir licença definida pela Opah IT]  ·  **Mantenedores:** Opah IT — DevSec Academy
