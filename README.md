@@ -13,7 +13,7 @@
 ![Trilhas](https://img.shields.io/badge/trilhas-6-orange)
 ![Testes](https://img.shields.io/badge/testes%20de%20conte%C3%BAdo-73-brightgreen)
 
-![Visão geral](docs/screenshots/dashboard.png)
+![Visão geral](docs/screenshots/visao-geral.jpg)
 
 </div>
 
@@ -151,11 +151,17 @@ flowchart LR
 
 ### Screenshots
 
-| Missão do lab | Workbench de ataque |
+Capturas da versão atual do portal (dados fictícios, ambiente local).
+
+| Lab OWASP (A03) | Trilha ISO 27001 (cenário) |
 |:---:|:---:|
-| ![Missão](docs/screenshots/lab-missao.png) | ![Atacar](docs/screenshots/lab-atacar.png) |
-| **Causa-raiz** | **Correção** |
-| ![Causa-raiz](docs/screenshots/lab-causa-raiz.png) | ![Correção](docs/screenshots/lab-correcao.png) |
+| ![Lab OWASP A03](docs/screenshots/lab-owasp-a03.jpg) | ![Trilha ISO](docs/screenshots/trilha-iso.jpg) |
+| **Laboratório de prompts (LLM)** | **Jornada Security Champion** |
+| ![Laboratório de prompts](docs/screenshots/lab-prompts.jpg) | ![Jornada Security Champion](docs/screenshots/jornada-champion.jpg) |
+
+Selo e credencial (SVG gerados pelo código; exemplo com nome fictício):
+
+![Credencial de exemplo](docs/screenshots/selo-credencial.svg)
 
 ## Trilhas de conteúdo
 
