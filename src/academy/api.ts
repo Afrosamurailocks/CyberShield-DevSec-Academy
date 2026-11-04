@@ -1,5 +1,7 @@
 // Cliente da API dos laboratorios. Em dev, o Vite faz proxy de /api -> :4000.
-import type { Lab, Progress } from './types';
+import type { Lab, Progress, PrivacyModule, PrivacyProgress, TrailKind } from './types';
+import type { PublicSeal } from './champion';
+import { learnerHeaders } from './learner';
 
 export interface RawResponse {
   ok: boolean;
@@ -20,7 +22,7 @@ export async function fetchLabs(): Promise<Lab[]> {
 export async function validateFlag(labId: string, flag: string): Promise<{ correct: boolean; points: number }> {
   const r = await fetch('/api/validate-flag', {
     method: 'POST',
-    headers: { 'content-type': 'application/json' },
+    headers: { 'content-type': 'application/json', ...learnerHeaders() },
     body: JSON.stringify({ labId, flag }),
   });
   return r.json();
@@ -88,3 +90,113 @@ export function loadProgress(): Progress {
 export function saveProgress(p: Progress): void {
   try { localStorage.setItem(KEY, JSON.stringify(p)); } catch { /* ignore */ }
 }
+
+// ───────── Trilhas (Privacidade/LGPD e CIS Controls) ─────────
+const ENDPOINT: Record<TrailKind, string> = { privacy: '/api/privacy', cis: '/api/cis', iso: '/api/iso', llm: '/api/llm' };
+const TRAIL_KEY: Record<TrailKind, string> = { privacy: 'cybershield.privacy.v1', cis: 'cybershield.cis.v1', iso: 'cybershield.iso.v1', llm: 'cybershield.llm.v1' };
+
+export async function fetchTrail(kind: TrailKind): Promise<PrivacyModule[]> {
+  const r = await fetch(`${ENDPOINT[kind]}/modules`);
+  if (!r.ok) throw new Error('trail unavailable');
+  const data = await r.json();
+  return data.modules as PrivacyModule[];
+}
+
+export async function answerTrail(kind: TrailKind, moduleId: string, scenarioId: string, optionIndex: number): Promise<{ correct: boolean; feedback: string }> {
+  const r = await fetch(`${ENDPOINT[kind]}/answer`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', ...learnerHeaders() },
+    body: JSON.stringify({ moduleId, scenarioId, optionIndex }),
+  });
+  if (!r.ok) throw new Error('answer rejected');
+  return r.json();
+}
+
+function isValidTrailProgress(value: unknown): value is PrivacyProgress {
+  if (typeof value !== 'object' || value === null) return false;
+  const done = (value as { done?: unknown }).done;
+  if (typeof done !== 'object' || done === null) return false;
+  return Object.values(done).every(
+    (e) => typeof e === 'object' && e !== null
+      && typeof (e as { at?: unknown }).at === 'string'
+      && typeof (e as { attempts?: unknown }).attempts === 'number',
+  );
+}
+
+export function loadTrailProgress(kind: TrailKind): PrivacyProgress {
+  try {
+    const raw = localStorage.getItem(TRAIL_KEY[kind]);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (isValidTrailProgress(parsed)) return parsed;
+    }
+  } catch { /* storage indisponivel ou JSON invalido */ }
+  return { done: {} };
+}
+
+export function saveTrailProgress(kind: TrailKind, p: PrivacyProgress): void {
+  try { localStorage.setItem(TRAIL_KEY[kind], JSON.stringify(p)); } catch { /* ignore */ }
+}
+
+// ───────── Laboratório interativo de prompts (área LLM) ─────────
+export interface PromptLabInfo {
+  id: string; order: number; owasp: string; category: string; title: string; persona: string;
+  greeting: string; objective: string; brief: string;
+  evidence?: { title: string; lines: string[]; note?: string };
+}
+export interface PromptLabProgress { solved: Record<string, { at: string; hints: number }> }
+
+async function postJson<T>(path: string, body: unknown): Promise<T> {
+  const r = await fetch(path, { method: 'POST', headers: { 'content-type': 'application/json', ...learnerHeaders() }, body: JSON.stringify(body) });
+  if (!r.ok) {
+    const e = await r.json().catch(() => ({}));
+    throw new Error((e as { error?: string }).error ?? 'request failed');
+  }
+  return r.json() as Promise<T>;
+}
+export async function fetchPromptLabs(): Promise<PromptLabInfo[]> {
+  const r = await fetch('/api/llm-lab/labs');
+  if (!r.ok) throw new Error('labs unavailable');
+  return (await r.json()).labs as PromptLabInfo[];
+}
+export const chatPromptLab = (labId: string, message: string, history: string[]) =>
+  postJson<{ reply: string; tokens: number }>('/api/llm-lab/chat', { labId, message, history });
+export const hintPromptLab = (labId: string, n: number) =>
+  postJson<{ hint: string }>('/api/llm-lab/hint', { labId, n });
+export const submitPromptLab = (labId: string, flag: string) =>
+  postJson<{ correct: boolean; lesson?: string }>('/api/llm-lab/submit', { labId, flag });
+
+const LAB_KEY = 'cybershield.llmlab.v1';
+export function loadPromptLabProgress(): PromptLabProgress {
+  try {
+    const raw = localStorage.getItem(LAB_KEY);
+    if (raw) {
+      const p = JSON.parse(raw);
+      if (p && typeof p === 'object' && p.solved && typeof p.solved === 'object') return p as PromptLabProgress;
+    }
+  } catch { /* storage indisponivel */ }
+  return { solved: {} };
+}
+export function savePromptLabProgress(p: PromptLabProgress): void {
+  try { localStorage.setItem(LAB_KEY, JSON.stringify(p)); } catch { /* ignore */ }
+}
+
+// ───────── Jornada Security Champion (progresso e selo no servidor) ─────────
+export interface ChampionMe { tracks: { id: string; done: number; total: number }[]; seal: PublicSeal | null }
+export async function fetchChampionMe(): Promise<ChampionMe> {
+  const r = await fetch('/api/champion/me', { headers: learnerHeaders() });
+  if (!r.ok) throw new Error('champion unavailable');
+  return r.json();
+}
+export const issueChampionSeal = (name: string) => postJson<{ seal: PublicSeal }>('/api/champion/issue', { name });
+export async function verifyChampionSeal(id: string): Promise<PublicSeal | null> {
+  const r = await fetch(`/api/champion/verify/${encodeURIComponent(id.trim().toUpperCase())}`);
+  if (!r.ok) return null;
+  return (await r.json()).seal as PublicSeal;
+}
+async function del(path: string): Promise<void> {
+  const r = await fetch(path, { method: 'DELETE', headers: learnerHeaders() });
+  if (!r.ok) throw new Error('request failed');
+}
+export const removeChampionSeal = () => del('/api/champion/seal');
+export const eraseChampionData = () => del('/api/champion/me');

@@ -12,7 +12,7 @@ const METHOD = [
   { title: 'Corrigir', desc: 'Estude a versão segura e o checklist de remediação.' },
 ];
 
-function Metric({ label, value, detail, progress }: { label: string; value: string; detail?: string; progress?: number }) {
+export function Metric({ label, value, detail, progress }: { label: string; value: string; detail?: string; progress?: number }) {
   return (
     <div className="relative px-5 py-4">
       <dt className="text-xs font-medium text-slate-400">{label}</dt>

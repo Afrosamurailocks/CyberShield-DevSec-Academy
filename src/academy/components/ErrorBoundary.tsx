@@ -19,7 +19,7 @@ export class ErrorBoundary extends React.Component<{ children: React.ReactNode }
   render() {
     if (this.state.hasError) {
       return (
-        <div role="alert" className="m-6 rounded-xl border border-rose-500/30 bg-rose-500/10 p-6 text-center text-rose-200">
+        <div role="alert" className="m-6 rounded-md border border-rose-500/30 bg-rose-500/10 p-6 text-center text-rose-200">
           <AlertTriangle className="mx-auto mb-2" aria-hidden="true" />
           <p className="font-semibold">Algo quebrou ao renderizar esta tela.</p>
           {this.state.message && <p className="mt-1 font-mono text-xs text-rose-300/80">{this.state.message}</p>}

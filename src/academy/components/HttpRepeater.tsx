@@ -134,7 +134,7 @@ export function HttpRepeater({ examples, onFlagDetected }: {
   const prettyBody = resp?.json ? JSON.stringify(resp.json, null, 2) : resp?.body ?? '';
 
   return (
-    <div className="rounded-xl border border-[var(--color-line)] bg-[var(--color-surface)] overflow-hidden">
+    <div className="rounded-md border border-[var(--color-line)] bg-[var(--color-surface)] overflow-hidden">
       {/* ── Site map: requisições salvas do alvo ── */}
       {examples.length > 0 && (
         <div className="flex items-stretch gap-px bg-[var(--color-line-soft)] border-b border-[var(--color-line)] overflow-x-auto">
@@ -188,7 +188,7 @@ export function HttpRepeater({ examples, onFlagDetected }: {
           <PaneHeader side="Request" accent="offense" />
           <textarea value={raw} onChange={(e) => setRaw(e.target.value)} onKeyDown={onKey} spellCheck={false}
             aria-label="Editor da requisição HTTP crua"
-            className="h-80 w-full resize-none bg-[var(--color-ink)] px-4 py-3 font-mono text-[12.5px] leading-relaxed text-slate-200 focus:outline-none focus:ring-0 placeholder:text-slate-500"
+            className="h-80 w-full resize-none bg-[var(--color-ink)] px-4 py-3 font-mono text-[12.5px] leading-relaxed text-slate-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--color-offense)]/60 placeholder:text-slate-500"
             placeholder={`POST /api/a01/login HTTP/1.1\nHost: ${TARGET_HOST}\nContent-Type: application/json\n\n{"username":"..."}`} />
         </div>
 
@@ -243,7 +243,7 @@ export function HttpRepeater({ examples, onFlagDetected }: {
           {onFlagDetected && (
             <button onClick={() => onFlagDetected(detectedFlag)}
               className="ml-auto rounded-md bg-[var(--color-defense)] px-3 py-1.5 text-xs font-bold text-[#06110c] hover:brightness-110 transition">
-              Capturar flag ▸
+              Capturar flag
             </button>
           )}
         </div>

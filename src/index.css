@@ -20,6 +20,21 @@
   --color-offense-soft: #f4a23f;
   --color-defense: #35d6a0;
 
+  /* Paleta semântica refinada: tons com luminosidade equivalente, menos saturados que o
+     default do Tailwind, para harmonizar com o laranja Opah sobre grafite.
+     rose = perigo/falha · amber = atenção · sky = informação · emerald = defesa. */
+  --color-rose-200: #f9c3cb;  --color-rose-300: #f4a0ac;  --color-rose-400: #ec7a8b;  --color-rose-500: #e0566b;
+  --color-red-300: #f5a79a;   --color-red-400: #ee8472;   --color-red-500: #e4604f;
+  --color-pink-300: #f2a8cb;  --color-pink-400: #ea82b4;  --color-pink-500: #e0609d;
+  --color-amber-200: #f7dcab; --color-amber-300: #f3c878; --color-amber-400: #ebb04f; --color-amber-500: #dd9a2c;
+  --color-orange-300: #f5b184; --color-orange-400: #f09558; --color-orange-500: #ea7d34;
+  --color-yellow-300: #ecd77f; --color-yellow-400: #e3c455; --color-yellow-500: #d6b232;
+  --color-emerald-300: #86e4bf; --color-emerald-400: #52d3a2; --color-emerald-500: #33b98a;
+  --color-teal-300: #7fdcd0;  --color-teal-400: #4cc7ba;  --color-teal-500: #30aea1;
+  --color-sky-200: #c3e1f9;   --color-sky-300: #92c9f3;   --color-sky-400: #69b0e8;   --color-sky-500: #4b97d8;
+  --color-violet-300: #bdaef3; --color-violet-400: #a58fe9; --color-violet-500: #8c72dc;
+  --color-fuchsia-300: #e4a6dc; --color-fuchsia-400: #d681cc; --color-fuchsia-500: #c564b9;
+
   --color-m-get: #35d6a0;
   --color-m-post: #f4a23f;
   --color-m-put: #52a8ff;
@@ -59,6 +74,20 @@
     outline-offset: 2px;
     border-radius: 2px;
   }
+}
+
+/* Fundo da aplicação: grafite com um halo laranja muito sutil no canto superior (identidade Opah) */
+.app-bg {
+  background-color: var(--color-ink);
+  background-image:
+    radial-gradient(900px 380px at 12% -80px, rgba(238, 125, 48, 0.09), transparent 70%),
+    radial-gradient(700px 320px at 100% 0, rgba(75, 151, 216, 0.05), transparent 70%);
+  background-repeat: no-repeat;
+}
+
+/* Elevação sutil: luz suave no topo do painel, sem sombra pesada */
+.surface-lit {
+  background-image: linear-gradient(to bottom, rgba(255, 255, 255, 0.025), transparent 120px);
 }
 
 /* Scrollbars discretas, estilo painel de ferramenta */
@@ -103,4 +132,14 @@
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+}
+
+/* Impressão da credencial Security Champion: só a imagem, em A4 paisagem */
+#champion-print { display: none; }
+@media print {
+  @page { size: A4 landscape; margin: 10mm; }
+  body.champion-print > #root { display: none !important; }
+  body.champion-print #champion-print { display: block !important; }
+  body.champion-print #champion-print img { width: 100%; height: auto; }
+  body.champion-print { background: #fff !important; }
 }

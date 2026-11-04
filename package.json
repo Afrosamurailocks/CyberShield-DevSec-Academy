@@ -14,6 +14,7 @@
     "lint": "tsc --noEmit",
     "test:labs": "node scripts/test-labs.mjs",
     "test:tools": "tsx scripts/test-tools.mts",
+    "test:content": "tsx --test scripts/test-content.mts scripts/test-prompt-labs.mts scripts/test-champion.mts scripts/test-champion-server.mts",
     "db:setup": "tsx server/dbSetup.ts"
   },
   "dependencies": {
