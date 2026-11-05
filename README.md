@@ -1,6 +1,8 @@
 <div align="center">
 
-# 🛡️ CyberShield DevSec Academy
+<img src="public/brand/cybershield-mark.svg" alt="Marca CyberShield" width="96" />
+
+# CyberShield DevSec Academy
 
 **Trilha de formação de Security Champions: AppSec (OWASP), privacidade (LGPD), CIS Controls, ISO/IEC 27001 e segurança de aplicações com LLM.**
 
@@ -11,7 +13,8 @@
 ![Tailwind](https://img.shields.io/badge/Tailwind-4-06B6D4?logo=tailwindcss&logoColor=white)
 ![OWASP](https://img.shields.io/badge/OWASP-Top%2010%202025-red)
 ![Trilhas](https://img.shields.io/badge/trilhas-6-orange)
-![Testes](https://img.shields.io/badge/testes%20de%20conte%C3%BAdo-73-brightgreen)
+![Testes](https://img.shields.io/badge/testes-106%20%2B%2044-brightgreen)
+![Rascunho](https://img.shields.io/badge/conte%C3%BAdo-rascunho%20para%20revis%C3%A3o-yellow)
 
 ![Visão geral](docs/screenshots/visao-geral.jpg)
 
@@ -26,6 +29,7 @@
 ## Sumário
 
 - [Visão geral](#visão-geral)
+- [Em imagens](#em-imagens)
 - [A jornada Security Champion](#a-jornada-security-champion)
 - [Novidades desta versão](#novidades-desta-versão)
 - [Quick start](#quick-start)
@@ -54,7 +58,25 @@
 | **Ferramentas embutidas** | Console HTTP (repeater estilo Burp), workbench com Base64, JWT, hash, URL, CRLF, prototype pollution e `node-serialize` |
 | **Progresso** | Quizzes e labs: UI no `localStorage`. **Selo:** registrado e assinado no servidor (ver [Jornada e selo](#jornada-e-selo-security-champion)) |
 | **Banco** | SQLite em memória para os labs (zero setup); Postgres/Supabase opcional. Registro do selo em `data/` (arquivo JSON) |
+| **Acesso e conformidade** | Login local, 4 perfis, relatório (Excel, JSON assinado, PDF) e trilha de auditoria com hash encadeado |
 | **Identidade visual** | CyberShield (Poppins/Open Sans/JetBrains Mono, fontes locais em `public/fonts`; laranja `#ee7d30` / grafite `#1e1e20`) |
+
+### Números do conteúdo
+
+| 11 | 31 | 87 | 48 | 30 | 10 |
+|:--:|:--:|:--:|:--:|:--:|:--:|
+| labs OWASP | cenários LGPD | cenários CIS | cenários ISO | cenários LLM | assistentes no lab de prompts |
+
+## Em imagens
+
+Capturas do ambiente local de testes (dados fictícios).
+
+| Treinamento | Acesso e conformidade |
+|:---:|:---:|
+| ![Lab OWASP](docs/screenshots/lab-owasp-a03.jpg)<br>**Lab OWASP:** missão, nível, pontos e kill chain | ![Login](docs/screenshots/acesso-login.jpg)<br>**Login** com conta e bloqueio por tentativas |
+| ![Trilha ISO](docs/screenshots/trilha-iso.jpg)<br>**Trilha ISO 27001:** módulos, cenários e duração estimada | ![Usuários](docs/screenshots/acesso-usuarios.jpg)<br>**Usuários e perfis** (Aluno, Gestor, Auditor, Admin) |
+| ![Laboratório de prompts](docs/screenshots/lab-prompts.jpg)<br>**Laboratório de prompts:** assistente simulado e flag | ![Relatório](docs/screenshots/relatorio-desempenho.jpg)<br>**Relatório de desempenho** com Excel, JSON assinado e PDF |
+| ![Jornada](docs/screenshots/jornada-champion.jpg)<br>**Jornada Security Champion:** rota e selo | ![Auditoria](docs/screenshots/trilha-auditoria.jpg)<br>**Trilha de auditoria** encadeada por hash |
 
 ## A jornada Security Champion
 
@@ -77,7 +99,8 @@ O **nível do selo** (Bronze 70%, Prata 85%, Ouro 100%) é o da trilha mais atra
 - **Laboratório de prompts**: 10 assistentes simulados e vulneráveis, flags fictícias, dicas e lição de correção.
 - **Jornada Security Champion**: rota, níveis, selo SVG (anel de 6 segmentos) e credencial em PNG/PDF, com **progresso e selo registrados e assinados no servidor** e verificação pública por ID.
 - **Qualidade do quiz**: corrigido o viés em que a resposta correta era a mais longa em 100% dos 166 cenários; opções reescritas, posição da correta embaralhada e testes que impedem a regressão.
-- **Testes**: `npm run test:content` (73 testes) além de `test:labs` e `test:tools`.
+- **Autenticação e conformidade**: login com perfis, gestão de usuários, relatório de desempenho com ficha de cada treinamento e trilha de auditoria (ver [a seção](#autenticação-usuários-e-relatório-de-conformidade)).
+- **Testes**: `npm run test:content` (106 testes) além de `test:labs`, `test:tools` e dois E2E com navegador real.
 - **Identidade visual própria (marca CyberShield)**, dashboard e catálogo sóbrios (hairlines, raios pequenos), acessibilidade (tablist com setas, `focus-visible`, `aria-hidden` em ícones) e limite de 180 requisições/min por IP nas rotas de resposta.
 - Mantido do projeto original: navegação pela kill chain real, workbench de interceptação tolerante, A06 com caixa de e-mail simulada, A09 redesenhado e gabarito do professor em PDF.
 
@@ -154,15 +177,7 @@ flowchart LR
 
 > 🔒 **Uso restrito ao corpo docente.** O arquivo contém todas as flags; não distribua aos alunos.
 
-### Screenshots
-
-Capturas da versão atual do portal (dados fictícios, ambiente local).
-
-| Lab OWASP (A05) | Trilha ISO 27001 (cenário) |
-|:---:|:---:|
-| ![Lab OWASP A05](docs/screenshots/lab-owasp-a03.jpg) | ![Trilha ISO](docs/screenshots/trilha-iso.jpg) |
-| **Laboratório de prompts (LLM)** | **Jornada Security Champion** |
-| ![Laboratório de prompts](docs/screenshots/lab-prompts.jpg) | ![Jornada Security Champion](docs/screenshots/jornada-champion.jpg) |
+### Selo e credencial
 
 Selo e credencial (SVG gerados pelo código; exemplo com nome fictício):
 
@@ -177,7 +192,7 @@ As quatro trilhas usam o mesmo motor (`server/labs/privacy.ts` generaliza `publi
 | LGPD | 9 (P01–P09) | 31 | sim | `server/labs/privacy*.ts` |
 | CIS Controls v8.1 | 19 (C01–C18 + C19 final) | 87 | 18 | `server/labs/cis*.ts` |
 | ISO/IEC 27001:2022 | 12 | 48 | 11 | `server/labs/iso*.ts` |
-| LLM (OWASP LLM Top 10) | 11 | 45 | 10 | `server/labs/llm.ts`, `llmContent*.ts`, `llmFinal.ts`, `llmCases.ts` |
+| LLM (OWASP LLM Top 10) | 10 (LLM01–LLM10) + Laboratório de prompts como final | 30 | 10 | `server/labs/llm.ts`, `llmContent*.ts`, `llmFinal.ts`, `llmCases.ts` |
 
 ### LGPD
 
@@ -242,6 +257,15 @@ Botão **Jornada Security Champion** no topo do menu lateral: rota das seis tril
 
 **Resumo:** login local com sessão por cookie, 4 perfis, gestão de usuários, relatório de desempenho exportável (Excel, JSON assinado, PDF) e trilha de auditoria encadeada por hash. Há um ponto de extensão para SSO/OIDC **[inserir provedor SSO]** (trocar `authenticate()` em `server/auth.ts`).
 
+```mermaid
+flowchart LR
+  P["Pessoa<br/>(Aluno · Gestor · Auditor · Admin)"] --> W["Portal web<br/>React"]
+  W --> A["API Express<br/>valida · registra · assina"]
+  A --> R[("Registro de progresso<br/>+ usuários")]
+  A --> L[("Trilha de auditoria<br/>hash encadeado")]
+  A --> O["Saídas<br/>Selo · Excel · JSON assinado · PDF"]
+```
+
 | Perfil | Pode |
 |--------|------|
 | **Aluno** | Fazer o treinamento; ver e exportar o **próprio** desempenho |
@@ -258,9 +282,13 @@ Botão **Jornada Security Champion** no topo do menu lateral: rota das seis tril
 - **CSRF:** cabeçalho `x-requested-with` obrigatório nas rotas que alteram estado com sessão. **RBAC** negado por padrão; tentativas negadas são auditadas. O último administrador é protegido e ninguém desativa a si mesmo.
 - O registro de treinamento de uma conta é **retido** (apagar é negado e auditado) porque é evidência. Pedidos de eliminação seguem o DPO.
 
+![Relatório de desempenho](docs/screenshots/relatorio-desempenho.jpg)
+
 **Relatório de desempenho** (menu "Conformidade"): KPIs, conclusão por trilha, por equipe e por pessoa (situação: Aprovado, Final pendente, Em andamento, Não iniciado), filtros e detalhe por trilha com datas de conclusão.
-- **Excel (.xlsx)** no padrão visual do projeto: abas Resumo (indicadores com fórmulas), Pessoas (filtros, cabeçalho congelado, cores por situação), Detalhe por trilha (formato longo, bom para tabela dinâmica) e Critérios e limites; painel com cartões de KPI e barras de dados, pronto para imprimir em A4 paisagem. **JSON assinado** (HMAC-SHA256 do conteúdo canônico, verificável pela interface; qualquer alteração é detectada) e **PDF** pela impressão do navegador (A4 paisagem, cabeçalho com a marca, id/hash/assinatura, rodapé de rascunho).
+- **Excel (.xlsx)** no padrão visual do projeto: abas Resumo (indicadores com fórmulas), Treinamentos (ficha básica de cada trilha: referência, formato, módulos, itens e avaliação final), Pessoas (filtros, cabeçalho congelado, cores por situação), Detalhe por trilha (formato longo, bom para tabela dinâmica) e Critérios e limites; painel com cartões de KPI e barras de dados, pronto para imprimir em A4 paisagem. **JSON assinado** (HMAC-SHA256 do conteúdo canônico, verificável pela interface; qualquer alteração é detectada) e **PDF** pela impressão do navegador (A4 paisagem, cabeçalho com a marca, id/hash/assinatura, rodapé de rascunho).
 - Só conta o que o servidor validou. **Limite:** apenas acertos e suas datas são registrados (sem tentativas, erros ou tempo de estudo). A assinatura prova integridade desde a geração, não aderência a uma norma.
+
+![Trilha de auditoria](docs/screenshots/trilha-auditoria.jpg)
 
 **Trilha de auditoria** (`data/audit-log.jsonl`): login, falha, bloqueio, logout, troca e reset de senha, criação, edição e desativação de usuários, vínculo de progresso, selo, visualização e exportação de relatório, acessos negados. Cada evento traz o hash do anterior (HMAC); editar, remover ou reordenar linhas é detectado e a interface mostra "Cadeia comprometida". **Limite:** quem controla o arquivo **e** a chave refaz a cadeia; guarde o hash do último evento em um repositório imutável externo **[definir com a Conformidade]**. Contém e-mail e IP (dados pessoais) e nunca grava senhas nem tokens.
 
