@@ -1,5 +1,7 @@
 /**
- * Registro central dos laboratorios OWASP Top 10 (2021).
+ * Registro central dos laboratorios OWASP Top 10:2025 (https://top10.owasp.org/2025/).
+ * Os `id` dos labs (ex.: a05-misconfig-debug) sao chaves ESTAVEIS de progresso/flag e
+ * NAO acompanham a numeracao 2025; a categoria exibida vem de `owaspId`/`owaspTitle`.
  * Fonte unica de verdade: o backend valida flags a partir daqui e expoe os
  * metadados (sem o campo `flag`) para o frontend em GET /api/labs.
  *
@@ -10,9 +12,11 @@
  * ficticia — a "Nexus Varejo S.A." — e formam um unico pentest black-box
  * encadeado. O achado de um passo alimenta o proximo. A ordem da intrusao
  * (campo killChain.step) e:
- *   A03(1) foothold -> A02(2) credencial -> A01(3) enumeracao -> A05(4) leak
- *   -> A07(5) privesc -> A04(6) takeover -> A06(7) pollution -> A10(8) pivot
- *   -> A08(9) RCE -> A09(10) cobertura de rastros.
+ *   A05(1) foothold -> A04(2) credencial -> A01(3) enumeracao -> A02(4) leak
+ *   -> A07(5) privesc -> A06(6) takeover -> A03(7) pollution -> A01-SSRF(8) pivot
+ *   -> A08(9) RCE -> A09(10) cobertura de rastros -> A10(11) fail-open.
+ * Na edicao 2025, SSRF foi incorporado ao A01 (Broken Access Control): por isso
+ * ha dois labs A01 (IDOR e SSRF) e o A10 passou a ser Mishandling of Exceptional Conditions.
  * Cada `context` abre com "Passo N da intrusao" para o dev nao se perder.
  *
  * REGRA DIDATICA: os exampleRequests sao BASELINES legitimos (sem o payload
@@ -53,7 +57,7 @@ export interface LabKillChain {
 
 export interface LabDefinition {
   id: string;
-  owaspId: string;          // A01..A10
+  owaspId: string;          // A01..A10 (edicao 2025)
   owaspTitle: string;
   killChain?: LabKillChain;
   title: string;
@@ -79,18 +83,18 @@ export const LABS: LabDefinition[] = [
     id: 'a01-idor-invoices',
     owaspId: 'A01',
     owaspTitle: 'Broken Access Control',
-    killChain: { step: 3, uses: 'Uma sessão válida de usuário comum — obtida no A03 (dump de credenciais) ou no A02 (token forjado).', provides: 'Mapa de dados: holerites e IDs de funcionários de toda a Nexus, incluindo a Diretoria. Insumo para reconhecimento dos próximos passos.' },
+    killChain: { step: 3, uses: 'Uma sessão válida de usuário comum — obtida no A05 (dump de credenciais) ou no A04 (token forjado).', provides: 'Mapa de dados: holerites e IDs de funcionários de toda a Nexus, incluindo a Diretoria. Insumo para reconhecimento dos próximos passos.' },
     title: 'IDOR no portal de holerites',
     difficulty: 'Iniciante',
     points: 100,
     cwe: 'CWE-639',
     tags: ['IDOR', 'BOLA', 'Access Control', 'API'],
     primer:
-      'O QUE É IDOR (Insecure Direct Object Reference)? É quando a API expõe objetos diretamente por um identificador (id de usuário, nº de pedido, de fatura...) e NÃO verifica se quem pede é dono daquele objeto. O backend checa que você está logado, mas nunca pergunta: "este usuário autenticado é dono do id solicitado?". Trocando o identificador pelo de outra pessoa, você lê ou altera dados que não são seus. É a falha central do OWASP A01:2021 (Broken Access Control) e, em APIs, do item nº 1 — API1:2023 BOLA. CWE-639.\n\nPOR DEFINIÇÃO, um IDOR envolve DOIS usuários diferentes: um ATACANTE (a conta que você controla) e uma VÍTIMA (outro usuário cujo recurso você acessa sem permissão). Se a vítima tem o mesmo nível de privilégio que o atacante, é um IDOR HORIZONTAL; se for um usuário mais privilegiado, é VERTICAL.\n\nO TESTE CLÁSSICO (método da referência de C. Mangorima): 1) ache um endpoint com id no caminho, ex.: GET /users/{id}/profile; 2) veja se o id é previsível (inteiro sequencial); 3) peça o SEU recurso e depois TROQUE o id pelo de outro — se vier dado que não é seu, é IDOR; 4) teste LEITURA e ESCRITA. Procure padrões como /users/{id}, /orders/{id}, /invoices/{id}, /files/{id}, /tickets/{id}.\n\nO ponto central: AUTENTICAR (saber quem você é) não é AUTORIZAR (verificar se você pode acessar AQUELE objeto). A autorização tem de ser aplicada em TODO objeto, TODA vez. Impacto: leitura vaza PII, notas internas e segredos; escrita permite impersonação e fraude; tudo automatizável para colher muitos registros.\n\nReferências: C. Mangorima — "IDOR" (Medium) · OWASP A01:2021 · OWASP API Security Top 10 (API1 BOLA) · CWE-639 · PortSwigger Web Security Academy. Links na aba Referências.',
+      'O QUE É IDOR (Insecure Direct Object Reference)? É quando a API expõe objetos diretamente por um identificador (id de usuário, nº de pedido, de fatura...) e NÃO verifica se quem pede é dono daquele objeto. O backend checa que você está logado, mas nunca pergunta: "este usuário autenticado é dono do id solicitado?". Trocando o identificador pelo de outra pessoa, você lê ou altera dados que não são seus. É a falha central do OWASP A01:2025 (Broken Access Control) e, em APIs, do item nº 1 — API1:2023 BOLA. CWE-639.\n\nPOR DEFINIÇÃO, um IDOR envolve DOIS usuários diferentes: um ATACANTE (a conta que você controla) e uma VÍTIMA (outro usuário cujo recurso você acessa sem permissão). Se a vítima tem o mesmo nível de privilégio que o atacante, é um IDOR HORIZONTAL; se for um usuário mais privilegiado, é VERTICAL.\n\nO TESTE CLÁSSICO (método da referência de C. Mangorima): 1) ache um endpoint com id no caminho, ex.: GET /users/{id}/profile; 2) veja se o id é previsível (inteiro sequencial); 3) peça o SEU recurso e depois TROQUE o id pelo de outro — se vier dado que não é seu, é IDOR; 4) teste LEITURA e ESCRITA. Procure padrões como /users/{id}, /orders/{id}, /invoices/{id}, /files/{id}, /tickets/{id}.\n\nO ponto central: AUTENTICAR (saber quem você é) não é AUTORIZAR (verificar se você pode acessar AQUELE objeto). A autorização tem de ser aplicada em TODO objeto, TODA vez. Impacto: leitura vaza PII, notas internas e segredos; escrita permite impersonação e fraude; tudo automatizável para colher muitos registros.\n\nReferências: C. Mangorima — "IDOR" (Medium) · OWASP A01:2025 · OWASP API Security Top 10 (API1 BOLA) · CWE-639 · PortSwigger Web Security Academy. Links na aba Referências.',
     objective:
       'Um IDOR se prova com DOIS usuários diferentes: um ATACANTE e uma VÍTIMA. Aqui você é o atacante "suporte_financeiro" (id 2, Analista Financeiro); a vítima é a colega "joana.rh" (id 4, Analista de RH) — mesmo nível de privilégio (IDOR horizontal). A tela de perfil chama GET /api/a01/users/2/profile — o id vai no CAMINHO. O servidor confere que você está logado, mas não que o perfil é seu. Faça o teste de troca de id: (1) LEITURA — GET /api/a01/users/4/profile devolve o perfil de joana.rh (nome, CPF, salário e a confidentialNote = flag); (2) ESCRITA — PUT /api/a01/users/4/profile altera o perfil dela. Você NUNCA teve a senha de joana — e mesmo assim leu e alterou os dados dela.',
     context:
-      'Passo 3 da intrusão à Nexus Varejo S.A. — subsistema: Portal de RH & Benefícios. Com a sessão de "suporte_financeiro" (id 2) em mãos (vinda do A03/A02), você abre o seu perfil: a tela chama GET /api/a01/users/2/profile — o id vai no CAMINHO da URL. No mesmo portal está a colega joana.rh (id 4), do mesmo nível. Mesmo padrão do CVE-2026-53470 (migration-planner): o endpoint autentica o usuário, mas nunca confere se o perfil pedido pertence a ele.',
+      'Passo 3 da intrusão à Nexus Varejo S.A. — subsistema: Portal de RH & Benefícios. Com a sessão de "suporte_financeiro" (id 2) em mãos (vinda do A05/A04), você abre o seu perfil: a tela chama GET /api/a01/users/2/profile — o id vai no CAMINHO da URL. No mesmo portal está a colega joana.rh (id 4), do mesmo nível. Mesmo padrão do CVE-2026-53470 (migration-planner): o endpoint autentica o usuário, mas nunca confere se o perfil pedido pertence a ele.',
     baseEndpoint: 'GET /api/a01/users/:id/profile · PUT /api/a01/users/:id/profile',
     exampleRequests: [
       { method: 'POST', path: '/api/a01/login', body: '{"username":"suporte_financeiro","password":"123456"}', note: 'Baseline: faça login — a resposta traz seu token de sessão (user comum). Ele é capturado automaticamente.' },
@@ -143,7 +147,7 @@ router.put('/users/:id/profile', auth, (req, res) => {
       ],
     } as LabWriteup,
     references: [
-      { label: 'OWASP A01:2021 Broken Access Control', url: 'https://owasp.org/Top10/A01_2021-Broken_Access_Control/' },
+      { label: 'OWASP A01:2025 Broken Access Control', url: 'https://top10.owasp.org/2025/A01_2025-Broken_Access_Control/' },
       { label: 'OWASP API Security Top 10 — API1 BOLA', url: 'https://owasp.org/API-Security/editions/2023/en/0xa1-broken-object-level-authorization/' },
       { label: 'Charmaine Mangorima — IDOR (Insecure Direct Object Reference), referência deste lab', url: 'https://medium.com/@charmainemangorima/idor-insecure-direct-object-reference-4e14445942e9' },
       { label: 'PortSwigger Web Security Academy — Access control & IDOR (laboratórios)', url: 'https://portswigger.net/web-security/access-control/idor' },
@@ -155,12 +159,12 @@ router.put('/users/:id/profile', auth, (req, res) => {
     flag: 'CYBER{a01_broken_object_level_authorization}',
   },
 
-  // ───────────────────────────── A02 ─────────────────────────────
+  // ───────────────────────────── A04 ─────────────────────────────
   {
     id: 'a02-reversible-token',
-    owaspId: 'A02',
+    owaspId: 'A04',
     owaspTitle: 'Cryptographic Failures',
-    killChain: { step: 2, uses: 'As credenciais do usuário comum "suporte_financeiro", recuperadas no dump do A03.', provides: 'A técnica de forjar um token sem integridade — você vai reusar exatamente esse raciocínio no A07 (JWT alg=none).' },
+    killChain: { step: 2, uses: 'As credenciais do usuário comum "suporte_financeiro", recuperadas no dump do A05.', provides: 'A técnica de forjar um token sem integridade — você vai reusar exatamente esse raciocínio no A07 (JWT alg=none).' },
     title: 'Token de sessão reversível (Base64 não é cifra)',
     difficulty: 'Iniciante',
     points: 120,
@@ -168,26 +172,26 @@ router.put('/users/:id/profile', auth, (req, res) => {
     tags: ['Crypto Failure', 'Token', 'Base64', 'Integrity'],
     tools: ['base64'],
     primer:
-      'O QUE É FALHA CRIPTOGRÁFICA (A02)? É proteger um dado com algo que NÃO é criptografia, ou usar cripto do jeito errado. O erro mais comum: confundir CODIFICAÇÃO (Base64, hex, URL-encode) com SEGURANÇA. Codificação é 100% reversível sem chave — serve para transportar bytes, nunca para esconder/proteger. Além disso, há duas garantias diferentes que as pessoas misturam: INTEGRIDADE (o dado não foi adulterado — obtida com assinatura/HMAC) e CONFIDENCIALIDADE (o dado não pode ser lido — obtida com cifra). Um token sem assinatura pode ser alterado por qualquer um; um "token" só em Base64 não tem nenhuma das duas.\n\nCOMO EXPLORAR: pegue o token, decodifique (atob/Base64), altere uma claim sensível (ex.: role), recodifique e reenvie. Se o servidor aceitar, não havia integridade.\n\nReferências: OWASP A02:2021 · CWE-311 (Missing Encryption) · CWE-326 (Inadequate Encryption Strength) · OWASP Session Management Cheat Sheet. Links na aba Referências.',
+      'O QUE É FALHA CRIPTOGRÁFICA (A04)? É proteger um dado com algo que NÃO é criptografia, ou usar cripto do jeito errado. O erro mais comum: confundir CODIFICAÇÃO (Base64, hex, URL-encode) com SEGURANÇA. Codificação é 100% reversível sem chave — serve para transportar bytes, nunca para esconder/proteger. Além disso, há duas garantias diferentes que as pessoas misturam: INTEGRIDADE (o dado não foi adulterado — obtida com assinatura/HMAC) e CONFIDENCIALIDADE (o dado não pode ser lido — obtida com cifra). Um token sem assinatura pode ser alterado por qualquer um; um "token" só em Base64 não tem nenhuma das duas.\n\nCOMO EXPLORAR: pegue o token, decodifique (atob/Base64), altere uma claim sensível (ex.: role), recodifique e reenvie. Se o servidor aceitar, não havia integridade.\n\nReferências: OWASP A04:2025 · CWE-311 (Missing Encryption) · CWE-326 (Inadequate Encryption Strength) · OWASP Session Management Cheat Sheet. Links na aba Referências.',
     objective:
-      'O portal entrega, no login, um "token de sessão" que parece opaco mas é só Base64 de um JSON — sem assinatura nem cifra. Decodifique o token, troque sua role de "user" para "admin", recodifique e acesse /api/a02/account. Sucesso = a conta responder com o dado privilegiado que só um admin veria.',
+      'O portal entrega, no login, um "token de sessão" que parece opaco mas é só Base64 de um JSON — sem assinatura nem cifra. Decodifique o token, troque sua role de "user" para "admin", recodifique e acesse /api/a04/account. Sucesso = a conta responder com o dado privilegiado que só um admin veria.',
     context:
-      'Passo 2 da intrusão à Nexus — subsistema: autenticação do SSO interno. Você já tem as credenciais do "suporte_financeiro" (saíram do dump do A03). Ao logar, percebe que o token começa com "eyJ..." — cheira a algo decodificável. A verificação do /account confia na claim "role" sem nenhuma chave. É a lição central do A02: embaralhar/encodar NÃO é proteger. O mesmo erro conceitual aparece em larga escala no A07.',
-    baseEndpoint: 'GET /api/a02/account',
+      'Passo 2 da intrusão à Nexus — subsistema: autenticação do SSO interno. Você já tem as credenciais do "suporte_financeiro" (saíram do dump do A05). Ao logar, percebe que o token começa com "eyJ..." — cheira a algo decodificável. A verificação do /account confia na claim "role" sem nenhuma chave. É a lição central do A04: embaralhar/encodar NÃO é proteger. O mesmo erro conceitual aparece em larga escala no A07.',
+    baseEndpoint: 'GET /api/a04/account',
     exampleRequests: [
-      { method: 'POST', path: '/api/a02/login', body: '{"username":"suporte_financeiro","password":"123456"}', note: 'Baseline: autentique-se e observe o formato do token devolvido (ele é capturado automaticamente).' },
-      { method: 'GET', path: '/api/a02/account', auth: true, note: 'Baseline: sua conta com role "user". Explore: adultere a role DENTRO do token e reenvie.' },
+      { method: 'POST', path: '/api/a04/login', body: '{"username":"suporte_financeiro","password":"123456"}', note: 'Baseline: autentique-se e observe o formato do token devolvido (ele é capturado automaticamente).' },
+      { method: 'GET', path: '/api/a04/account', auth: true, note: 'Baseline: sua conta com role "user". Explore: adultere a role DENTRO do token e reenvie.' },
     ],
     hints: [
       'O token é só Base64 de um JSON. Decodifique (atob no console do navegador, ou um decoder Base64): você verá {"sub":"...","role":"user"}.',
       'Troque "role":"user" por "role":"admin" e recodifique em Base64url (btoa). Nenhuma chave é necessária — esse é o bug.',
-      'Envie o token forjado em Authorization: Bearer <token> para GET /api/a02/account. O servidor acredita na role sem verificar integridade.',
+      'Envie o token forjado em Authorization: Bearer <token> para GET /api/a04/account. O servidor acredita na role sem verificar integridade.',
     ],
     writeup: {
       rootCause:
         'O token de sessão é apenas Base64 de um JSON — codificação, não criptografia. Não há assinatura (integridade) nem cifra (confidencialidade). Qualquer um lê e altera as claims (ex.: role) e recodifica, porque nenhuma chave é necessária.',
       impact:
-        'Escalonamento de privilégio trivial: qualquer usuário forja um token de admin em segundos, sem ferramenta especial. Quando o "token" ainda carrega PII em claro, vira também vazamento de dados. É a essência do A02 — e a falha gêmea do A07, onde o mesmo "confiar em dado não verificado" aparece num JWT. Pense em quantos sistemas internos tratam Base64 como se fosse segredo.',
+        'Escalonamento de privilégio trivial: qualquer usuário forja um token de admin em segundos, sem ferramenta especial. Quando o "token" ainda carrega PII em claro, vira também vazamento de dados. É a essência do A04 — e a falha gêmea do A07, onde o mesmo "confiar em dado não verificado" aparece num JWT. Pense em quantos sistemas internos tratam Base64 como se fosse segredo.',
       vulnerableLanguage: 'typescript',
       vulnerableCode: `// FALHA: "protege" a sessao so com Base64 (encoding != criptografia)
 function makeSession(user) {
@@ -214,7 +218,7 @@ const claims = jwt.verify(token, SECRET, { algorithms: ['HS256'] });
       ],
     } as LabWriteup,
     references: [
-      { label: 'OWASP A02:2021 Cryptographic Failures', url: 'https://owasp.org/Top10/A02_2021-Cryptographic_Failures/' },
+      { label: 'OWASP A04:2025 Cryptographic Failures', url: 'https://top10.owasp.org/2025/A04_2025-Cryptographic_Failures/' },
       { label: 'CWE-311: Missing Encryption of Sensitive Data', url: 'https://cwe.mitre.org/data/definitions/311.html' },
       { label: 'CWE-326: Inadequate Encryption Strength', url: 'https://cwe.mitre.org/data/definitions/326.html' },
       { label: 'OWASP Session Management Cheat Sheet', url: 'https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html' },
@@ -222,12 +226,12 @@ const claims = jwt.verify(token, SECRET, { algorithms: ['HS256'] });
     flag: 'CYBER{a02_encoding_is_not_encryption}',
   },
 
-  // ───────────────────────────── A03 ─────────────────────────────
+  // ───────────────────────────── A05 ─────────────────────────────
   {
     id: 'a03-sqli-login',
-    owaspId: 'A03',
+    owaspId: 'A05',
     owaspTitle: 'Injection',
-    killChain: { step: 1, provides: 'Foothold da intrusão: dump da tabela users (usernames, roles, hashes MD5) via UNION e a apiKey de produção do admin. É daqui que saem as credenciais usadas no A02 e a sessão usada no A01.' },
+    killChain: { step: 1, provides: 'Foothold da intrusão: dump da tabela users (usernames, roles, hashes MD5) via UNION e a apiKey de produção do admin. É daqui que saem as credenciais usadas no A04 e a sessão usada no A01.' },
     title: 'SQL Injection — bypass de autenticação e dump de dados',
     difficulty: 'Intermediario',
     points: 150,
@@ -235,14 +239,14 @@ const claims = jwt.verify(token, SECRET, { algorithms: ['HS256'] });
     tags: ['SQLi', 'Injection', 'Auth Bypass'],
     tools: ['hash'],
     primer:
-      'O QUE É INJECTION / SQL INJECTION (A03)? Acontece quando a entrada do usuário é misturada a um comando (SQL, shell, LDAP...) de forma que o interpretador deixa de distinguir DADO de CÓDIGO. Em SQLi, você concatena texto numa query e o atacante "fecha" a string e injeta sua própria lógica. A correção definitiva é SEMPRE separar dado de comando com queries parametrizadas (prepared statements) — não é escapar caractere por caractere, não é blacklist.\n\nCOMO EXPLORAR: insira um caractere de aspa (\') para quebrar a string e observe o erro; depois altere a lógica — bypass booleano (OR \'1\'=\'1\') para autenticar, ou UNION SELECT para exfiltrar outras colunas/tabelas (casando o nº de colunas).\n\nReferências: OWASP A03:2021 · CWE-89 · OWASP SQL Injection Prevention Cheat Sheet. Links na aba Referências.',
+      'O QUE É INJECTION / SQL INJECTION (A05)? Acontece quando a entrada do usuário é misturada a um comando (SQL, shell, LDAP...) de forma que o interpretador deixa de distinguir DADO de CÓDIGO. Em SQLi, você concatena texto numa query e o atacante "fecha" a string e injeta sua própria lógica. A correção definitiva é SEMPRE separar dado de comando com queries parametrizadas (prepared statements) — não é escapar caractere por caractere, não é blacklist.\n\nCOMO EXPLORAR: insira um caractere de aspa (\') para quebrar a string e observe o erro; depois altere a lógica — bypass booleano (OR \'1\'=\'1\') para autenticar, ou UNION SELECT para exfiltrar outras colunas/tabelas (casando o nº de colunas).\n\nReferências: OWASP A05:2025 · CWE-89 · OWASP SQL Injection Prevention Cheat Sheet. Links na aba Referências.',
     objective:
       'Este é o ponto de entrada na Nexus. O login monta a query SQL por concatenação (4 colunas: id, username, password_md5, role). Faça um bypass booleano para entrar como admin E um UNION para dumpar a tabela de usuários. Sucesso = a resposta listar os usuários/hashes e revelar a credencial de produção do admin.',
     context:
-      'Passo 1 — o começo de tudo. Alvo: o portal de vendas LEGADO da Nexus Varejo, ainda no ar e esquecido pelo time. O endpoint /api/a03/login concatena a entrada direto na SQL. Explorá-lo te dá o primeiro acesso e o material (credenciais + hashes) que alimenta o A02 e o A01. É o mesmo tipo de falha do CVE-2025-25257 (FortiWeb) e do CVE-2026-9082 (Drupal), ambos SQLi crítica em produtos amplamente usados em 2025/2026.',
-    baseEndpoint: 'POST /api/a03/login',
+      'Passo 1 — o começo de tudo. Alvo: o portal de vendas LEGADO da Nexus Varejo, ainda no ar e esquecido pelo time. O endpoint /api/a05/login concatena a entrada direto na SQL. Explorá-lo te dá o primeiro acesso e o material (credenciais + hashes) que alimenta o A04 e o A01. É o mesmo tipo de falha do CVE-2025-25257 (FortiWeb) e do CVE-2026-9082 (Drupal), ambos SQLi crítica em produtos amplamente usados em 2025/2026.',
+    baseEndpoint: 'POST /api/a05/login',
     exampleRequests: [
-      { method: 'POST', path: '/api/a03/login', body: `{"username":"admin","password":"senha123"}`, note: 'Baseline: tentativa de login normal (falha, você não tem a senha). Agora use o campo username para mudar a LÓGICA da query.' },
+      { method: 'POST', path: '/api/a05/login', body: `{"username":"admin","password":"senha123"}`, note: 'Baseline: tentativa de login normal (falha, você não tem a senha). Agora use o campo username para mudar a LÓGICA da query.' },
     ],
     hints: [
       'A query é: SELECT id, username, password_md5, role FROM users WHERE username = \'...\' AND password_md5 = \'...\'. São 4 colunas e a sua entrada entra crua entre aspas.',
@@ -271,7 +275,7 @@ const user = db.prepare(
       ],
     } as LabWriteup,
     references: [
-      { label: 'OWASP A03:2021 Injection', url: 'https://owasp.org/Top10/A03_2021-Injection/' },
+      { label: 'OWASP A05:2025 Injection', url: 'https://top10.owasp.org/2025/A05_2025-Injection/' },
       { label: 'OWASP SQL Injection Prevention Cheat Sheet', url: 'https://cheatsheetseries.owasp.org/cheatsheets/SQL_Injection_Prevention_Cheat_Sheet.html' },
       { label: 'CWE-89: SQL Injection', url: 'https://cwe.mitre.org/data/definitions/89.html' },
       { label: 'Caso real (2026, CISA KEV, exploração ativa): CVE-2026-9082 — SQLi no Drupal Core, PostgreSQL (SA-CORE-2026-004)', url: 'https://nvd.nist.gov/vuln/detail/CVE-2026-9082' },
@@ -281,35 +285,35 @@ const user = db.prepare(
     flag: 'CYBER{a03_sqli_auth_bypass_parametrize_everything}',
   },
 
-  // ───────────────────────────── A04 ─────────────────────────────
+  // ───────────────────────────── A06 ─────────────────────────────
   {
     id: 'a04-insecure-reset',
-    owaspId: 'A04',
+    owaspId: 'A06',
     owaspTitle: 'Insecure Design',
-    killChain: { step: 6, uses: 'O conhecimento de quais contas administrativas existem (enumeradas no A01/A03).', provides: 'Account takeover definitivo do admin: você redefine a senha dele sem nunca ter acesso ao e-mail.' },
+    killChain: { step: 6, uses: 'O conhecimento de quais contas administrativas existem (enumeradas no A01/A05).', provides: 'Account takeover definitivo do admin: você redefine a senha dele sem nunca ter acesso ao e-mail.' },
     title: 'Reset de senha com token previsível',
     difficulty: 'Avancado',
     points: 200,
     cwe: 'CWE-640',
     tags: ['Insecure Design', 'Password Reset', 'Predictable Token'],
     primer:
-      'O QUE É INSECURE DESIGN (A04)? É uma falha na CONCEPÇÃO do controle, não um bug pontual de implementação. Mesmo com o código "escrito certo", o desenho é inseguro — faltou pensar nos abusos na fase de projeto (threat modeling / abuse cases). Exemplo clássico: um fluxo de "esqueci a senha" cujo token de recuperação é previsível (deriva do tempo, de um contador, ou tem pouca entropia). Nenhum patch de linha única resolve: é preciso REPROJETAR o fluxo (token de CSPRNG, hash armazenado, expiração curta, uso único, rate-limit).\n\nCOMO EXPLORAR: descubra de onde o token é derivado. Se for o relógio do servidor, obtenha esse relógio (ex.: um endpoint /server-time) e PREVEJA o token da vítima dentro da janela aceita.\n\nReferências: OWASP A04:2021 · CWE-640 (Weak Password Recovery) · OWASP Forgot Password Cheat Sheet. Links na aba Referências.',
+      'O QUE É INSECURE DESIGN (A06)? É uma falha na CONCEPÇÃO do controle, não um bug pontual de implementação. Mesmo com o código "escrito certo", o desenho é inseguro — faltou pensar nos abusos na fase de projeto (threat modeling / abuse cases). Exemplo clássico: um fluxo de "esqueci a senha" cujo token de recuperação é previsível (deriva do tempo, de um contador, ou tem pouca entropia). Nenhum patch de linha única resolve: é preciso REPROJETAR o fluxo (token de CSPRNG, hash armazenado, expiração curta, uso único, rate-limit).\n\nCOMO EXPLORAR: descubra de onde o token é derivado. Se for o relógio do servidor, obtenha esse relógio (ex.: um endpoint /server-time) e PREVEJA o token da vítima dentro da janela aceita.\n\nReferências: OWASP A06:2025 · CWE-640 (Weak Password Recovery) · OWASP Forgot Password Cheat Sheet. Links na aba Referências.',
     objective:
       'O fluxo de "esqueci minha senha" gera o token de recuperação a partir do próprio relógio do servidor (segundo epoch) — zero aleatoriedade. Dispare o reset do admin, confirme no log de auditoria do gateway de e-mail que o link FOI enviado (mas o token vem mascarado — você nunca teria acesso a ele por aí), descubra o relógio do servidor e preveja o token para redefinir a senha dele. Sucesso = a conta do admin ser tomada e revelar o dado de recuperação.',
     context:
       'Passo 6 — consolidando o controle. Já com visão de admin, você quer posse PERMANENTE da conta da Diretoria, independente de token forjado. Analisando o fluxo de recuperação da Nexus, descobre uma falha de DESIGN (não um bug pontual): o token de reset é derivado do horário do servidor, e o endpoint /server-time entrega esse relógio de bandeja. O log de auditoria do gateway de e-mail confirma que a mensagem foi enviada, mas o conteúdo com o link vem mascarado — nem a Nexus consegue ler o próprio token depois de enviado. Previsibilidade de token de reset é um clássico de "Insecure Design" — o controle já nasceu quebrado na prancheta.',
-    baseEndpoint: 'POST /api/a04/reset',
+    baseEndpoint: 'POST /api/a06/reset',
     exampleRequests: [
-      { method: 'POST', path: '/api/a04/forgot', body: '{"username":"admin"}', note: 'Baseline: dispara o fluxo de recuperação do admin e registra o envio do e-mail.' },
-      { method: 'GET', path: '/api/a04/mailbox/admin', note: 'Log de auditoria do gateway de e-mail: confirma que a mensagem foi enviada (destinatário, assunto, horário), mas o link/token vem mascarado — nem esse log interno guarda o segredo em claro.' },
-      { method: 'GET', path: '/api/a04/server-time', note: 'Revela o relógio do servidor (epochSeconds) — a base previsível do token.' },
-      { method: 'POST', path: '/api/a04/reset', body: '{"username":"admin","token":"PREVISTO","newPassword":"Hacked#1"}', note: 'Baseline: substitua "PREVISTO" pelo epochSeconds que você obteve no /server-time.' },
+      { method: 'POST', path: '/api/a06/forgot', body: '{"username":"admin"}', note: 'Baseline: dispara o fluxo de recuperação do admin e registra o envio do e-mail.' },
+      { method: 'GET', path: '/api/a06/mailbox/admin', note: 'Log de auditoria do gateway de e-mail: confirma que a mensagem foi enviada (destinatário, assunto, horário), mas o link/token vem mascarado — nem esse log interno guarda o segredo em claro.' },
+      { method: 'GET', path: '/api/a06/server-time', note: 'Revela o relógio do servidor (epochSeconds) — a base previsível do token.' },
+      { method: 'POST', path: '/api/a06/reset', body: '{"username":"admin","token":"PREVISTO","newPassword":"Hacked#1"}', note: 'Baseline: substitua "PREVISTO" pelo epochSeconds que você obteve no /server-time.' },
     ],
     hints: [
-      'O e-mail de reset existe de verdade (confira em GET /api/a04/mailbox/admin após o /forgot) — mas o token vem mascarado por DLP. Ler o e-mail não é o caminho; prever o token é.',
+      'O e-mail de reset existe de verdade (confira em GET /api/a06/mailbox/admin após o /forgot) — mas o token vem mascarado por DLP. Ler o e-mail não é o caminho; prever o token é.',
       'O token de reset é simplesmente o segundo epoch atual do servidor — não há hash, sal nem aleatoriedade. O design é o bug.',
-      'Faça GET /api/a04/server-time e use o valor de epochSeconds como token (a API aceita uma pequena janela de tempo).',
-      'Envie POST /api/a04/reset com {"username":"admin","token":<epochSeconds>,"newPassword":"..."}.',
+      'Faça GET /api/a06/server-time e use o valor de epochSeconds como token (a API aceita uma pequena janela de tempo).',
+      'Envie POST /api/a06/reset com {"username":"admin","token":<epochSeconds>,"newPassword":"..."}.',
     ],
     writeup: {
       rootCause:
@@ -338,7 +342,7 @@ function makeResetToken() {
       ],
     } as LabWriteup,
     references: [
-      { label: 'OWASP A04:2021 Insecure Design', url: 'https://owasp.org/Top10/A04_2021-Insecure_Design/' },
+      { label: 'OWASP A06:2025 Insecure Design', url: 'https://top10.owasp.org/2025/A06_2025-Insecure_Design/' },
       { label: 'OWASP Forgot Password Cheat Sheet', url: 'https://cheatsheetseries.owasp.org/cheatsheets/Forgot_Password_Cheat_Sheet.html' },
       { label: 'CWE-640: Weak Password Recovery Mechanism', url: 'https://cwe.mitre.org/data/definitions/640.html' },
       { label: 'Caso real: CVE-2022-29174 — token de reset adivinhável (Countly)', url: 'https://nvd.nist.gov/vuln/detail/CVE-2022-29174' },
@@ -346,37 +350,37 @@ function makeResetToken() {
     flag: 'CYBER{a04_predictable_reset_token_is_a_design_flaw}',
   },
 
-  // ───────────────────────────── A05 ─────────────────────────────
+  // ───────────────────────────── A02 ─────────────────────────────
   {
     id: 'a05-misconfig-debug',
-    owaspId: 'A05',
+    owaspId: 'A02',
     owaspTitle: 'Security Misconfiguration',
-    killChain: { step: 4, uses: 'Acesso autenticado à aplicação (dos passos anteriores) para alcançar as rotas internas.', provides: 'Dois segredos de ouro: o JWT_SECRET (→ assina token admin VÁLIDO no A07) e o host de metadados 169.254.169.254 (→ alvo do SSRF no A10).' },
+    killChain: { step: 4, uses: 'Acesso autenticado à aplicação (dos passos anteriores) para alcançar as rotas internas.', provides: 'Dois segredos de ouro: o JWT_SECRET (→ assina token admin VÁLIDO no A07) e o host de metadados 169.254.169.254 (→ alvo do SSRF no A01 (SSRF)).' },
     title: 'Endpoint de debug exposto em produção',
     difficulty: 'Iniciante',
     points: 120,
     cwe: 'CWE-16',
     tags: ['Misconfiguration', 'Debug', 'Information Disclosure'],
     primer:
-      'O QUE É SECURITY MISCONFIGURATION (A05)? É a segurança comprometida por CONFIGURAÇÃO, não por código: defaults inseguros, recursos de diagnóstico/debug ligados em produção, mensagens de erro verbosas, headers ausentes, segredos em variáveis de ambiente expostas, buckets/portas abertas. Raramente é "a" falha fatal sozinha — mas costuma ser o ACELERADOR que entrega segredos e detalhes internos para encadear as outras.\n\nCOMO EXPLORAR: procure rotas de diagnóstico esquecidas (/debug, /actuator, /_status, /env) e leia erros verbosos em busca de pistas de rotas internas. O prêmio costuma ser um dump de configuração/segredos.\n\nReferências: OWASP A05:2021 · CWE-16 (Configuration) · CWE-215 (Sensitive Info in Debug). Links na aba Referências.',
+      'O QUE É SECURITY MISCONFIGURATION (A02)? É a segurança comprometida por CONFIGURAÇÃO, não por código: defaults inseguros, recursos de diagnóstico/debug ligados em produção, mensagens de erro verbosas, headers ausentes, segredos em variáveis de ambiente expostas, buckets/portas abertas. Raramente é "a" falha fatal sozinha — mas costuma ser o ACELERADOR que entrega segredos e detalhes internos para encadear as outras.\n\nCOMO EXPLORAR: procure rotas de diagnóstico esquecidas (/debug, /actuator, /_status, /env) e leia erros verbosos em busca de pistas de rotas internas. O prêmio costuma ser um dump de configuração/segredos.\n\nReferências: OWASP A02:2025 · CWE-16 (Configuration) · CWE-215 (Sensitive Info in Debug). Links na aba Referências.',
     objective:
-      'Um endpoint de diagnóstico ficou ligado em produção e despeja as variáveis de ambiente. O índice do serviço lista as rotas internas — siga a pista até o endpoint de debug e leia o dump. Sucesso = capturar o APP_SECRET exposto — e, de brinde, anotar o JWT_SECRET e o host de metadados que vão destravar o A07 e o A10.',
+      'Um endpoint de diagnóstico ficou ligado em produção e despeja as variáveis de ambiente. O índice do serviço lista as rotas internas — siga a pista até o endpoint de debug e leia o dump. Sucesso = capturar o APP_SECRET exposto — e, de brinde, anotar o JWT_SECRET e o host de metadados que vão destravar o A07 e o A01 (SSRF).',
     context:
-      'Passo 4 — o pulo do gato. A Nexus fez um deploy apressado: ficou com NODE_ENV fora de "production" e um /debug/env ativo e SEM autenticação. Esse dump é o nó que amarra toda a kill chain: dele saem o JWT_SECRET (que transforma o A07 de "truque alg=none" em assinatura legítima de admin) e o endereço do serviço de metadados da nuvem (o alvo do SSRF no A10). Mesma classe do CVE-2024-7569 (Ivanti ITSM), em que um endpoint de debug vazou o client secret OIDC.',
-    baseEndpoint: 'GET /api/a05/debug/env',
+      'Passo 4 — o pulo do gato. A Nexus fez um deploy apressado: ficou com NODE_ENV fora de "production" e um /debug/env ativo e SEM autenticação. Esse dump é o nó que amarra toda a kill chain: dele saem o JWT_SECRET (que transforma o A07 de "truque alg=none" em assinatura legítima de admin) e o endereço do serviço de metadados da nuvem (o alvo do SSRF, parte do A01). Mesma classe do CVE-2024-7569 (Ivanti ITSM), em que um endpoint de debug vazou o client secret OIDC.',
+    baseEndpoint: 'GET /api/a02/debug/env',
     exampleRequests: [
-      { method: 'GET', path: '/api/a05/', note: 'Baseline: o índice do serviço (200) lista as rotas internas — inclusive uma de diagnóstico que não deveria estar exposta em produção. Siga a pista.' },
+      { method: 'GET', path: '/api/a02/', note: 'Baseline: o índice do serviço (200) lista as rotas internas — inclusive uma de diagnóstico que não deveria estar exposta em produção. Siga a pista.' },
     ],
     hints: [
-      'Rotas de diagnóstico (/debug, /actuator, /_status) costumam escapar para produção. A pista está no índice do serviço (GET /api/a05/), que lista as rotas internas.',
-      'A flag está na variável APP_SECRET do dump de GET /api/a05/debug/env.',
-      '[KILL CHAIN] O mesmo dump vaza JWT_SECRET (guarde p/ assinar um token admin VÁLIDO no A07) e AWS_METADATA_HOST (o 169.254.169.254 que você vai atacar no A10).',
+      'Rotas de diagnóstico (/debug, /actuator, /_status) costumam escapar para produção. A pista está no índice do serviço (GET /api/a02/), que lista as rotas internas.',
+      'A flag está na variável APP_SECRET do dump de GET /api/a02/debug/env.',
+      '[KILL CHAIN] O mesmo dump vaza JWT_SECRET (guarde p/ assinar um token admin VÁLIDO no A07) e AWS_METADATA_HOST (o 169.254.169.254 que você vai atacar no A01 (SSRF)).',
     ],
     writeup: {
       rootCause:
         'Configuração insegura: recurso de diagnóstico habilitado fora de ambiente de desenvolvimento, sem autenticação, retornando segredos e detalhes internos (process.env inteiro).',
       impact:
-        'Vazamento de segredos (chaves de assinatura, strings de conexão, endpoints internos) que viram a chave-mestra para movimentação lateral. No CVE-2024-7569 (Ivanti ITSM, CVSS 9.8) um endpoint de debug entregou o segredo OIDC, permitindo forjar tokens de admin — exatamente o encadeamento A05→A07 que você faz aqui. Misconfiguration raramente é "a" falha: é o acelerador de todas as outras.',
+        'Vazamento de segredos (chaves de assinatura, strings de conexão, endpoints internos) que viram a chave-mestra para movimentação lateral. No CVE-2024-7569 (Ivanti ITSM, CVSS 9.8) um endpoint de debug entregou o segredo OIDC, permitindo forjar tokens de admin — exatamente o encadeamento A02→A07 que você faz aqui. Misconfiguration raramente é "a" falha: é o acelerador de todas as outras.',
       vulnerableLanguage: 'typescript',
       vulnerableCode: `// FALHA: endpoint de debug sem gate de ambiente nem auth
 router.get('/debug/env', (req, res) => {
@@ -397,19 +401,19 @@ if (process.env.NODE_ENV !== 'production') {
       ],
     } as LabWriteup,
     references: [
-      { label: 'OWASP A05:2021 Security Misconfiguration', url: 'https://owasp.org/Top10/A05_2021-Security_Misconfiguration/' },
+      { label: 'OWASP A02:2025 Security Misconfiguration', url: 'https://top10.owasp.org/2025/A02_2025-Security_Misconfiguration/' },
       { label: 'CWE-215: Insertion of Sensitive Information Into Debugging Code', url: 'https://cwe.mitre.org/data/definitions/215.html' },
       { label: 'Caso real (2024): CVE-2024-7569 — debug do Ivanti ITSM vaza OIDC client secret (CVSS 9.8)', url: 'https://nvd.nist.gov/vuln/detail/CVE-2024-7569' },
     ],
     flag: 'CYBER{a05_debug_endpoints_do_not_belong_in_prod}',
   },
 
-  // ───────────────────────────── A06 ─────────────────────────────
+  // ───────────────────────────── A03 ─────────────────────────────
   {
     id: 'a06-vuln-components',
-    owaspId: 'A06',
-    owaspTitle: 'Vulnerable and Outdated Components',
-    killChain: { step: 7, uses: 'Privilégio administrativo (do A07/A04) para alcançar o endpoint de configuração interno.', provides: 'Prototype pollution via dependência vulnerável — a base de escalonamento que, com gadgets, chega a RCE.' },
+    owaspId: 'A03',
+    owaspTitle: 'Software Supply Chain Failures',
+    killChain: { step: 7, uses: 'Privilégio administrativo (do A07/A06) para alcançar o endpoint de configuração interno.', provides: 'Prototype pollution via dependência vulnerável — a base de escalonamento que, com gadgets, chega a RCE.' },
     title: 'Componente desatualizado com CVE conhecido',
     difficulty: 'Intermediario',
     points: 150,
@@ -417,18 +421,18 @@ if (process.env.NODE_ENV !== 'production') {
     tags: ['SCA', 'CVE', 'Dependencies', 'Supply Chain'],
     tools: ['proto'],
     primer:
-      'O QUE É COMPONENTE VULNERÁVEL/DESATUALIZADO (A06)? A falha não está no SEU código, e sim numa dependência (direta ou transitiva) com um CVE conhecido. Você é responsável pela segurança de TODA a árvore de dependências que importa. Exemplo deste lab: uma função de merge recursivo de uma lib antiga que não bloqueia chaves especiais (__proto__, constructor, prototype), permitindo PROTOTYPE POLLUTION — poluir Object.prototype e influenciar objetos do processo inteiro (privesc, DoS e, com gadgets, RCE).\n\nCOMO EXPLORAR: descubra a biblioteca e a versão (ex.: um endpoint /version), pesquise o CVE dessa versão e envie o payload que ela aceita — aqui, {"__proto__":{"isAdmin":true}} num merge.\n\nReferências: OWASP A06:2021 · CWE-1104 (Unmaintained Components) · PortSwigger Prototype Pollution. Links na aba Referências.',
+      'O QUE É FALHA NA CADEIA DE SUPRIMENTOS DE SOFTWARE (A03:2025)? Em 2025 a categoria deixou de ser só "componente vulnerável/desatualizado" e passou a cobrir TODA a cadeia (dependências, build, distribuição e atualização) — este lab foca no caso clássico, uma dependência com CVE conhecido. A falha não está no SEU código, e sim numa dependência (direta ou transitiva) com um CVE conhecido. Você é responsável pela segurança de TODA a árvore de dependências que importa. Exemplo deste lab: uma função de merge recursivo de uma lib antiga que não bloqueia chaves especiais (__proto__, constructor, prototype), permitindo PROTOTYPE POLLUTION — poluir Object.prototype e influenciar objetos do processo inteiro (privesc, DoS e, com gadgets, RCE).\n\nCOMO EXPLORAR: descubra a biblioteca e a versão (ex.: um endpoint /version), pesquise o CVE dessa versão e envie o payload que ela aceita — aqui, {"__proto__":{"isAdmin":true}} num merge.\n\nReferências: OWASP A03:2025 · CWE-1104 (Unmaintained Components) · PortSwigger Prototype Pollution. Links na aba Referências.',
     objective:
       'O endpoint de configuração usa um "merge" recursivo de uma biblioteca antiga, vulnerável a prototype pollution. Descubra a versão, pesquise o CVE e envie o payload que injeta uma propriedade no Object.prototype. Sucesso = forçar isAdmin=true globalmente e a resposta passar a incluir o recurso administrativo (masterKey).',
     context:
-      'Passo 7 — abusando do que a Nexus importou sem auditar. O endpoint /api/a06/merge-config faz merge recursivo com lodash 4.17.4 (CVE-2019-10744), que não protege chaves especiais como __proto__. Você pesquisa a versão, encontra o CVE e polui o protótipo. É o retrato do A06: a falha não está no SEU código, e sim numa dependência esquecida — e o mesmíssimo padrão __proto__ reapareceu em 2025 no CVE-2025-55164 (content-security-policy-parser, CVSS 9.1).',
-    baseEndpoint: 'POST /api/a06/merge-config',
+      'Passo 7 — abusando do que a Nexus importou sem auditar. O endpoint /api/a03/merge-config faz merge recursivo com lodash 4.17.4 (CVE-2019-10744), que não protege chaves especiais como __proto__. Você pesquisa a versão, encontra o CVE e polui o protótipo. É o retrato do A03: a falha não está no SEU código, e sim numa dependência esquecida — e o mesmíssimo padrão __proto__ reapareceu em 2025 no CVE-2025-55164 (content-security-policy-parser, CVSS 9.1).',
+    baseEndpoint: 'POST /api/a03/merge-config',
     exampleRequests: [
-      { method: 'GET', path: '/api/a06/version', note: 'Baseline: revela a dependência e a versão em uso. Pesquise o CVE dessa versão exata.' },
-      { method: 'POST', path: '/api/a06/merge-config', body: '{"theme":"light"}', note: 'Baseline: um merge normal de config (nada acontece). Explore: injete uma chave especial para poluir o protótipo.' },
+      { method: 'GET', path: '/api/a03/version', note: 'Baseline: revela a dependência e a versão em uso. Pesquise o CVE dessa versão exata.' },
+      { method: 'POST', path: '/api/a03/merge-config', body: '{"theme":"light"}', note: 'Baseline: um merge normal de config (nada acontece). Explore: injete uma chave especial para poluir o protótipo.' },
     ],
     hints: [
-      'Consulte GET /api/a06/version e pesquise o CVE da versão (lodash 4.17.4 → CVE-2019-10744).',
+      'Consulte GET /api/a03/version e pesquise o CVE da versão (lodash 4.17.4 → CVE-2019-10744).',
       'Prototype pollution: no corpo, injete {"__proto__":{"isAdmin":true}} (constructor.prototype também funciona).',
       'Depois do merge poluído, TODO objeto passa a ter isAdmin=true — e a resposta então inclui adminFeatures.masterKey.',
     ],
@@ -436,7 +440,7 @@ if (process.env.NODE_ENV !== 'production') {
       rootCause:
         'Uso de componente desatualizado/inseguro cuja rotina de merge recursivo não protege chaves especiais (__proto__, constructor, prototype), permitindo poluir Object.prototype — e, a partir daí, influenciar o comportamento de todo o processo.',
       impact:
-        'Prototype pollution eleva privilégio, causa DoS e, combinada com "gadgets" presentes em outras libs, chega a RCE. O CVE-2019-10744 (lodash, CVSS 9.1) atingiu milhões de projetos; em 2025 o CVE-2025-55164 mostrou que o mesmo __proto__ continua escapando em parsers novos. A lição do A06: você é responsável pela segurança de TODA a sua árvore de dependências, não só do código que escreve.',
+        'Prototype pollution eleva privilégio, causa DoS e, combinada com "gadgets" presentes em outras libs, chega a RCE. O CVE-2019-10744 (lodash, CVSS 9.1) atingiu milhões de projetos; em 2025 o CVE-2025-55164 mostrou que o mesmo __proto__ continua escapando em parsers novos. A lição do A03: você é responsável pela segurança de TODA a sua árvore de dependências, não só do código que escreve.',
       vulnerableLanguage: 'javascript',
       vulnerableCode: `// lib desatualizada: merge recursivo sem bloquear __proto__
 function merge(target, src) {
@@ -465,7 +469,7 @@ function merge(target, src) {
       ],
     } as LabWriteup,
     references: [
-      { label: 'OWASP A06:2021 Vulnerable and Outdated Components', url: 'https://owasp.org/Top10/A06_2021-Vulnerable_and_Outdated_Components/' },
+      { label: 'OWASP A03:2025 Software Supply Chain Failures', url: 'https://top10.owasp.org/2025/A03_2025-Software_Supply_Chain_Failures/' },
       { label: 'CWE-1104: Use of Unmaintained Third Party Components', url: 'https://cwe.mitre.org/data/definitions/1104.html' },
       { label: 'CVE-2019-10744 — lodash prototype pollution, técnica deste lab (CVSS 9.1)', url: 'https://nvd.nist.gov/vuln/detail/CVE-2019-10744' },
       { label: 'Caso real (2025): CVE-2025-55164 — prototype pollution via __proto__ no content-security-policy-parser, corrigido na 0.6.0 (CVSS 9.1)', url: 'https://nvd.nist.gov/vuln/detail/CVE-2025-55164' },
@@ -478,8 +482,8 @@ function merge(target, src) {
   {
     id: 'a07-jwt-none',
     owaspId: 'A07',
-    owaspTitle: 'Identification and Authentication Failures',
-    killChain: { step: 5, uses: 'O JWT_SECRET vazado no A05 — ele permite assinar um token admin VÁLIDO (HS256), não só o truque do alg=none.', provides: 'Acesso administrativo pleno à API (deployKey) — a chave para os passos de pivot e RCE.' },
+    owaspTitle: 'Authentication Failures',
+    killChain: { step: 5, uses: 'O JWT_SECRET vazado no A02 — ele permite assinar um token admin VÁLIDO (HS256), não só o truque do alg=none.', provides: 'Acesso administrativo pleno à API (deployKey) — a chave para os passos de pivot e RCE.' },
     title: 'JWT com algoritmo "none" (ou segredo vazado)',
     difficulty: 'Avancado',
     points: 200,
@@ -487,11 +491,11 @@ function merge(target, src) {
     tags: ['JWT', 'alg:none', 'Auth', 'Privilege Escalation'],
     tools: ['jwt'],
     primer:
-      'O QUE É FALHA DE IDENTIFICAÇÃO/AUTENTICAÇÃO (A07)? É quando o mecanismo que comprova QUEM você é pode ser contornado: senhas fracas, ausência de MFA, sessões mal geridas e — o caso deste lab — verificação de JWT quebrada. Um JWT é header.payload.signature; a segurança depende de VERIFICAR a assinatura fixando o algoritmo esperado. Erros fatais: aceitar "alg":"none" (sem assinatura), aceitar algoritmo escolhido pelo atacante (confusion RS256→HS256) ou usar um segredo fraco/vazado (aí o atacante assina um token válido).\n\nCOMO EXPLORAR: (1) alg=none — monte header {"alg":"none"}, payload com role=admin e assinatura vazia (header.payload.); (2) se o segredo HMAC vazar (ex.: no A05), assine um HS256 válido com role=admin usando esse segredo.\n\nReferências: OWASP A07:2021 · CWE-347 (Improper Signature Verification) · OWASP JWT Cheat Sheet. Links na aba Referências.',
+      'O QUE É FALHA DE AUTENTICAÇÃO (A07)? É quando o mecanismo que comprova QUEM você é pode ser contornado: senhas fracas, ausência de MFA, sessões mal geridas e — o caso deste lab — verificação de JWT quebrada. Um JWT é header.payload.signature; a segurança depende de VERIFICAR a assinatura fixando o algoritmo esperado. Erros fatais: aceitar "alg":"none" (sem assinatura), aceitar algoritmo escolhido pelo atacante (confusion RS256→HS256) ou usar um segredo fraco/vazado (aí o atacante assina um token válido).\n\nCOMO EXPLORAR: (1) alg=none — monte header {"alg":"none"}, payload com role=admin e assinatura vazia (header.payload.); (2) se o segredo HMAC vazar (ex.: no A02), assine um HS256 válido com role=admin usando esse segredo.\n\nReferências: OWASP A07:2025 · CWE-347 (Improper Signature Verification) · OWASP JWT Cheat Sheet. Links na aba Referências.',
     objective:
-      'O backend valida JWTs sem fixar o algoritmo e aceita "alg":"none" (sem assinatura). Forje um token com role=admin por DOIS caminhos — alg=none e, usando o JWT_SECRET do A05, uma assinatura HS256 válida — e acesse /api/a07/admin. Sucesso = o painel admin responder com o segredo de deploy.',
+      'O backend valida JWTs sem fixar o algoritmo e aceita "alg":"none" (sem assinatura). Forje um token com role=admin por DOIS caminhos — alg=none e, usando o JWT_SECRET do A02, uma assinatura HS256 válida — e acesse /api/a07/admin. Sucesso = o painel admin responder com o segredo de deploy.',
     context:
-      'Passo 5 — virando admin de verdade. Ao logar como "dev_junior" você recebe um JWT HS256 com role=user; o /admin te barra com 403. Aqui mora o A07: a verificação não fixa o algoritmo esperado. Caminho fácil: alg=none. Caminho realista e devastador: como você pegou o JWT_SECRET no /debug/env do A05, você assina um token HS256 PERFEITAMENTE VÁLIDO com role=admin — foi o enredo do CVE-2026-44699 (LibJWT, CVSS 9.1), em que a lib aceitava verificar HS256 com chave indevida e derrubava a autenticação inteira.',
+      'Passo 5 — virando admin de verdade. Ao logar como "dev_junior" você recebe um JWT HS256 com role=user; o /admin te barra com 403. Aqui mora o A07: a verificação não fixa o algoritmo esperado. Caminho fácil: alg=none. Caminho realista e devastador: como você pegou o JWT_SECRET no /debug/env do A02, você assina um token HS256 PERFEITAMENTE VÁLIDO com role=admin — foi o enredo do CVE-2026-44699 (LibJWT, CVSS 9.1), em que a lib aceitava verificar HS256 com chave indevida e derrubava a autenticação inteira.',
     baseEndpoint: 'GET /api/a07/admin',
     exampleRequests: [
       { method: 'POST', path: '/api/a07/login', body: '{"username":"dev_junior","password":"qwerty"}', note: 'Baseline: autentique-se e receba um JWT HS256 com role=user (capturado automaticamente).' },
@@ -500,13 +504,13 @@ function merge(target, src) {
     hints: [
       'Com seu token (role=user) o /admin retorna 403. Você precisa de role=admin DENTRO do token — e o servidor não vai reclamar da assinatura.',
       'Caminho 1 (alg=none): header = {"alg":"none","typ":"JWT"}, payload com "role":"admin", assinatura vazia → header.payload. (com o ponto final). Funciona em qualquer caixa: none/None/NONE.',
-      '[KILL CHAIN] Caminho 2 (segredo vazado): com o JWT_SECRET do A05, assine um HS256 válido com role=admin usando esse segredo (ataque de weak/known secret) — indistinguível de um token legítimo.',
+      '[KILL CHAIN] Caminho 2 (segredo vazado): com o JWT_SECRET do A02, assine um HS256 válido com role=admin usando esse segredo (ataque de weak/known secret) — indistinguível de um token legítimo.',
     ],
     writeup: {
       rootCause:
         'A verificação de JWT não fixa o algoritmo esperado e aceita "none" (sem assinatura). Pior: se o segredo HMAC vaza por outra falha, o atacante assina um token válido. Em ambos os casos o servidor passa a confiar em um token totalmente controlado pelo atacante.',
       impact:
-        'Qualquer um forja tokens com claims arbitrárias (role=admin, sub=qualquer) → escalonamento de privilégio e account takeover. O CVE-2026-44699 (LibJWT, CVSS 9.1) e o CVE-2024-54150 (cjwt) são variações recentes de "a lib não fixa o algoritmo": confusão RS256→HS256 ou HMAC com chave nula derrubam a autenticação inteira. É a ligação direta com o A02 (confiar em dado não verificado) e com o A05 (que vazou o segredo).',
+        'Qualquer um forja tokens com claims arbitrárias (role=admin, sub=qualquer) → escalonamento de privilégio e account takeover. O CVE-2026-44699 (LibJWT, CVSS 9.1) e o CVE-2024-54150 (cjwt) são variações recentes de "a lib não fixa o algoritmo": confusão RS256→HS256 ou HMAC com chave nula derrubam a autenticação inteira. É a ligação direta com o A04 (confiar em dado não verificado) e com o A02 (que vazou o segredo).',
       vulnerableLanguage: 'typescript',
       vulnerableCode: `// FALHA: decodifica sem exigir algoritmo/assinatura
 function verify(token) {
@@ -528,7 +532,7 @@ const payload = jwt.verify(token, SECRET, { algorithms: ['HS256'] });
       ],
     } as LabWriteup,
     references: [
-      { label: 'OWASP A07:2021 Identification and Authentication Failures', url: 'https://owasp.org/Top10/A07_2021-Identification_and_Authentication_Failures/' },
+      { label: 'OWASP A07:2025 Authentication Failures', url: 'https://top10.owasp.org/2025/A07_2025-Authentication_Failures/' },
       { label: 'OWASP JWT Cheat Sheet', url: 'https://cheatsheetseries.owasp.org/cheatsheets/JSON_Web_Token_for_Java_Cheat_Sheet.html' },
       { label: 'CWE-347: Improper Verification of Cryptographic Signature', url: 'https://cwe.mitre.org/data/definitions/347.html' },
       { label: 'Caso real (2026): CVE-2026-44699 — LibJWT verifica HS256 com chave nula → bypass de autenticação (CVSS 9.1)', url: 'https://nvd.nist.gov/vuln/detail/CVE-2026-44699' },
@@ -541,8 +545,8 @@ const payload = jwt.verify(token, SECRET, { algorithms: ['HS256'] });
   {
     id: 'a08-insecure-deser',
     owaspId: 'A08',
-    owaspTitle: 'Software and Data Integrity Failures',
-    killChain: { step: 9, uses: 'A SecretAccessKey da AWS roubada no A10 — ela é exigida no header X-Cloud-Key para o endpoint aceitar o import.', provides: 'Remote Code Execution no servidor da Nexus — o comprometimento total que antecede a limpeza de rastros.' },
+    owaspTitle: 'Software or Data Integrity Failures',
+    killChain: { step: 9, uses: 'A SecretAccessKey da AWS roubada no A01 (SSRF) — ela é exigida no header X-Cloud-Key para o endpoint aceitar o import.', provides: 'Remote Code Execution no servidor da Nexus — o comprometimento total que antecede a limpeza de rastros.' },
     title: 'Desserialização insegura (node-serialize RCE)',
     difficulty: 'Avancado',
     points: 220,
@@ -550,18 +554,18 @@ const payload = jwt.verify(token, SECRET, { algorithms: ['HS256'] });
     tags: ['Insecure Deserialization', 'RCE', 'node-serialize', 'CVE-2017-5941'],
     tools: ['node-serialize'],
     primer:
-      'O QUE É FALHA DE INTEGRIDADE DE SOFTWARE/DADOS (A08)? É confiar em código ou dados sem verificar sua ORIGEM e INTEGRIDADE: updates sem assinatura, pipelines CI/CD inseguras e — o caso deste lab — DESSERIALIZAÇÃO INSEGURA. Desserializar é reconstruir um objeto a partir de bytes; bibliotecas "ricas" reconstroem (e às vezes EXECUTAM) tipos/funções embutidos no dado. Se o dado vem do atacante, isso vira RCE antes de qualquer validação. O mesmo risco existe em pickle (Python), ObjectInputStream (Java), BinaryFormatter (.NET) e, aqui, node-serialize (Node), que executa funções marcadas com _$$ND_FUNC$$_.\n\nCOMO EXPLORAR: injete uma função auto-invocada (IIFE) no formato do desserializador — em node-serialize, um valor _$$ND_FUNC$$_function(){...}() roda durante o unserialize.\n\nReferências: OWASP A08:2021 · CWE-502 (Deserialization of Untrusted Data) · OWASP Deserialization Cheat Sheet. Links na aba Referências.',
+      'O QUE É FALHA DE INTEGRIDADE DE SOFTWARE/DADOS (A08)? É confiar em código ou dados sem verificar sua ORIGEM e INTEGRIDADE: updates sem assinatura, pipelines CI/CD inseguras e — o caso deste lab — DESSERIALIZAÇÃO INSEGURA. Desserializar é reconstruir um objeto a partir de bytes; bibliotecas "ricas" reconstroem (e às vezes EXECUTAM) tipos/funções embutidos no dado. Se o dado vem do atacante, isso vira RCE antes de qualquer validação. O mesmo risco existe em pickle (Python), ObjectInputStream (Java), BinaryFormatter (.NET) e, aqui, node-serialize (Node), que executa funções marcadas com _$$ND_FUNC$$_.\n\nCOMO EXPLORAR: injete uma função auto-invocada (IIFE) no formato do desserializador — em node-serialize, um valor _$$ND_FUNC$$_function(){...}() roda durante o unserialize.\n\nReferências: OWASP A08:2025 · CWE-502 (Deserialization of Untrusted Data) · OWASP Deserialization Cheat Sheet. Links na aba Referências.',
     objective:
-      'O endpoint de importação de perfil desserializa dados não confiáveis com node-serialize.unserialize(), que EXECUTA funções marcadas com _$$ND_FUNC$$_. Autentique o deploy com a chave roubada no A10 e injete um payload IIFE que dispara execução de código. Sucesso = a resposta trazer a saída do comando executado no servidor.',
+      'O endpoint de importação de perfil desserializa dados não confiáveis com node-serialize.unserialize(), que EXECUTA funções marcadas com _$$ND_FUNC$$_. Autentique o deploy com a chave roubada no A01 (SSRF) e injete um payload IIFE que dispara execução de código. Sucesso = a resposta trazer a saída do comando executado no servidor.',
     context:
-      'Passo 9 — do acesso à nuvem ao RCE. O serviço de perfis da Nexus usa node-serialize@0.0.4 (CVE-2017-5941). Mas o import de perfil é um fluxo "privilegiado": ele só roda se você provar que já comprometeu a infra — por isso exige o header X-Cloud-Key com a SecretAccessKey que você roubou via SSRF no A10. Um IIFE marcado com _$$ND_FUNC$$_ executa durante o unserialize. É a mesma classe do CVE-2025-53770 (SharePoint "ToolShell", RCE em massa) e do CVE-2026-25769 (Wazuh): desserializar dado não confiável = executar código do atacante.',
+      'Passo 9 — do acesso à nuvem ao RCE. O serviço de perfis da Nexus usa node-serialize@0.0.4 (CVE-2017-5941). Mas o import de perfil é um fluxo "privilegiado": ele só roda se você provar que já comprometeu a infra — por isso exige o header X-Cloud-Key com a SecretAccessKey que você roubou via SSRF no A01 (SSRF). Um IIFE marcado com _$$ND_FUNC$$_ executa durante o unserialize. É a mesma classe do CVE-2025-53770 (SharePoint "ToolShell", RCE em massa) e do CVE-2026-25769 (Wazuh): desserializar dado não confiável = executar código do atacante.',
     baseEndpoint: 'POST /api/a08/import-profile',
     exampleRequests: [
       { method: 'GET', path: '/api/a08/profile', note: 'Baseline: mostra o desserializador em uso e o formato do objeto de perfil.' },
-      { method: 'POST', path: '/api/a08/import-profile', body: '{"data":"{\\"name\\":\\"ana\\",\\"role\\":\\"user\\"}"}', note: 'Baseline: import benigno. Sem o header X-Cloud-Key ele retorna 401. Explore: adicione o header (chave do A10) e injete um IIFE serializado.' },
+      { method: 'POST', path: '/api/a08/import-profile', body: '{"data":"{\\"name\\":\\"ana\\",\\"role\\":\\"user\\"}"}', note: 'Baseline: import benigno. Sem o header X-Cloud-Key ele retorna 401. Explore: adicione o header (chave do A01 (SSRF)) e injete um IIFE serializado.' },
     ],
     hints: [
-      '[KILL CHAIN] O deploy exige a SecretAccessKey roubada no A10. Adicione o header "X-Cloud-Key: <SecretAccessKey do A10>" — sem ela, 401.',
+      '[KILL CHAIN] O deploy exige a SecretAccessKey roubada no A01 (SSRF). Adicione o header "X-Cloud-Key: <SecretAccessKey do A01 (SSRF)>" — sem ela, 401.',
       'node-serialize executa funções marcadas com _$$ND_FUNC$$_ durante unserialize(); um IIFE (com "()" no fim) dispara na desserialização, antes de qualquer validação.',
       String.raw`Em "data", envie: {"rce":"_$$ND_FUNC$$_function(){require('child_process').execSync('id')}()"}`,
     ],
@@ -598,7 +602,7 @@ app.post('/import-profile', (req, res) => {
       ],
     } as LabWriteup,
     references: [
-      { label: 'OWASP A08:2021 Software and Data Integrity Failures', url: 'https://owasp.org/Top10/A08_2021-Software_and_Data_Integrity_Failures/' },
+      { label: 'OWASP A08:2025 Software or Data Integrity Failures', url: 'https://top10.owasp.org/2025/A08_2025-Software_or_Data_Integrity_Failures/' },
       { label: 'CWE-502: Deserialization of Untrusted Data', url: 'https://cwe.mitre.org/data/definitions/502.html' },
       { label: 'CVE-2017-5941 — node-serialize RCE (a técnica exata deste lab)', url: 'https://nvd.nist.gov/vuln/detail/CVE-2017-5941' },
       { label: 'Caso real (2026): CVE-2026-25769 — RCE por desserialização insegura no Wazuh Cluster (CVSS 9.1)', url: 'https://nvd.nist.gov/vuln/detail/CVE-2026-25769' },
@@ -612,7 +616,7 @@ app.post('/import-profile', (req, res) => {
   {
     id: 'a09-log-injection',
     owaspId: 'A09',
-    owaspTitle: 'Security Logging and Monitoring Failures',
+    owaspTitle: 'Security Logging and Alerting Failures',
     killChain: { step: 10, uses: 'Tudo o que você fez até aqui — agora é hora de apagar os rastros no subsistema de auditoria.', provides: 'Cobertura final: uma trilha de auditoria forjada que engana o SOC e, ao ser aberta no dashboard, sequestra a sessão do próprio analista — fechando a intrusão.' },
     title: 'Log injection / forjando trilha de auditoria',
     difficulty: 'Intermediario',
@@ -621,7 +625,7 @@ app.post('/import-profile', (req, res) => {
     tags: ['Logging', 'Log Injection', 'CRLF', 'Monitoring', 'Stored XSS'],
     tools: ['crlf'],
     primer:
-      'O QUE É FALHA DE LOGGING E MONITORAMENTO (A09)? Duas faces: (1) não registrar/alertar eventos de segurança suficientes (ataques passam despercebidos); (2) registrar e EXIBIR entrada não confiável SEM neutralizar — o caso deste lab, em DUAS camadas. Camada 1: LOG INJECTION (CRLF) — se a entrada do usuário é concatenada no log sem escapar quebras de linha (\\r\\n), o atacante escreve LINHAS inteiras de log, forjando eventos. Camada 2 (a parte que eleva o risco): o mesmo log cru costuma ser renderizado num painel/dashboard para o analista ler — se esse painel também não neutraliza HTML, o que era "só" uma linha de log forjada vira um <script> executando na SESSÃO DO ANALISTA (Stored XSS contra quem está monitorando). É assim que log injection deixa de ser cosmético e vira comprometimento real: o atacante não engana só o texto, ele ataca a FERRAMENTA de monitoramento.\n\nCOMO EXPLORAR: (1) injete um \\n no campo logado seguido de uma linha no formato que o parser de auditoria reconhece como evento legítimo; (2) na MESMA entrada, inclua um <script> — quando o dashboard do SOC renderizar o log sem escapar, o script "roda" na sessão de quem está lendo.\n\nReferências: OWASP A09:2021 · CWE-117 (Improper Output Neutralization for Logs) · CWE-79 (XSS) · OWASP Logging e XSS Cheat Sheets. Links na aba Referências.',
+      'O QUE É FALHA DE LOGGING E ALERTAS (A09)? Duas faces: (1) não registrar/alertar eventos de segurança suficientes (ataques passam despercebidos); (2) registrar e EXIBIR entrada não confiável SEM neutralizar — o caso deste lab, em DUAS camadas. Camada 1: LOG INJECTION (CRLF) — se a entrada do usuário é concatenada no log sem escapar quebras de linha (\\r\\n), o atacante escreve LINHAS inteiras de log, forjando eventos. Camada 2 (a parte que eleva o risco): o mesmo log cru costuma ser renderizado num painel/dashboard para o analista ler — se esse painel também não neutraliza HTML, o que era "só" uma linha de log forjada vira um <script> executando na SESSÃO DO ANALISTA (Stored XSS contra quem está monitorando). É assim que log injection deixa de ser cosmético e vira comprometimento real: o atacante não engana só o texto, ele ataca a FERRAMENTA de monitoramento.\n\nCOMO EXPLORAR: (1) injete um \\n no campo logado seguido de uma linha no formato que o parser de auditoria reconhece como evento legítimo; (2) na MESMA entrada, inclua um <script> — quando o dashboard do SOC renderizar o log sem escapar, o script "roda" na sessão de quem está lendo.\n\nReferências: OWASP A09:2025 · CWE-117 (Improper Output Neutralization for Logs) · CWE-79 (XSS) · OWASP Logging e XSS Cheat Sheets. Links na aba Referências.',
     objective:
       'O logger grava a entrada do usuário sem neutralizar quebras de linha, E o dashboard do SOC renderiza esse log como HTML sem escapar nada. Uma única falha, duas camadas quebradas. Primeiro, injete um \\n no username para forjar uma linha "AUDIT event=admin_login_success" (prova de log injection). Depois, na MESMA técnica, injete também um <script> e abra o dashboard: as DUAS coisas juntas — evento forjado + script — são o que libera o clearance de verdade. Forjar sozinho não é suficiente: é preciso encadear log injection com a falha de encoding na visualização.',
     context:
@@ -679,7 +683,7 @@ router.get('/dashboard', (req, res) => {
       ],
     } as LabWriteup,
     references: [
-      { label: 'OWASP A09:2021 Security Logging and Monitoring Failures', url: 'https://owasp.org/Top10/A09_2021-Security_Logging_and_Monitoring_Failures/' },
+      { label: 'OWASP A09:2025 Security Logging and Alerting Failures', url: 'https://top10.owasp.org/2025/A09_2025-Security_Logging_and_Alerting_Failures/' },
       { label: 'OWASP Logging Cheat Sheet', url: 'https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html' },
       { label: 'OWASP Cross Site Scripting (XSS) Prevention Cheat Sheet', url: 'https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html' },
       { label: 'CWE-117: Improper Output Neutralization for Logs', url: 'https://cwe.mitre.org/data/definitions/117.html' },
@@ -689,12 +693,12 @@ router.get('/dashboard', (req, res) => {
     flag: 'CYBER{a09_never_trust_unsanitized_log_input}',
   },
 
-  // ───────────────────────────── A10 ─────────────────────────────
+  // ───────────────────────────── A01 · SSRF ─────────────────────────────
   {
     id: 'a10-ssrf',
-    owaspId: 'A10',
-    owaspTitle: 'Server-Side Request Forgery (SSRF)',
-    killChain: { step: 8, uses: 'O host de metadados (169.254.169.254) vazado pelo /debug/env do A05.', provides: 'Credenciais temporárias da AWS (SecretAccessKey) — o X-Cloud-Key que o A08 exige para liberar o RCE.' },
+    owaspId: 'A01',
+    owaspTitle: 'Broken Access Control (SSRF)',
+    killChain: { step: 8, uses: 'O host de metadados (169.254.169.254) vazado pelo /debug/env do A02.', provides: 'Credenciais temporárias da AWS (SecretAccessKey) — o X-Cloud-Key que o A08 exige para liberar o RCE.' },
     title: 'SSRF para metadados internos',
     difficulty: 'Avancado',
     points: 200,
@@ -702,18 +706,18 @@ router.get('/dashboard', (req, res) => {
     tags: ['SSRF', 'Cloud Metadata', 'Internal'],
     tools: ['url'],
     primer:
-      'O QUE É SSRF (Server-Side Request Forgery, A10)? É quando a aplicação faz uma requisição de rede para uma URL que VOCÊ controla, sem validar o destino. Como quem dispara é o SERVIDOR, você alcança o que ele alcança e você não: loopback (127.0.0.1), redes privadas (10/172.16/192.168) e, o prêmio em nuvem, o serviço de METADADOS em 169.254.169.254, que entrega credenciais temporárias de IAM (foi o vetor do caso Capital One). Validar só o hostname não basta — é preciso resolver o DNS e checar o IP final (cuidado com DNS rebinding e redirects).\n\nCOMO EXPLORAR: aponte o parâmetro de URL para alvos internos; na AWS, siga o IMDS em 2 passos — liste a role em .../iam/security-credentials/ e depois busque .../iam/security-credentials/<role> para obter a SecretAccessKey.\n\nReferências: OWASP A10:2021 · CWE-918 · OWASP SSRF Prevention Cheat Sheet. Links na aba Referências.',
+      'O QUE É SSRF (Server-Side Request Forgery — na edição 2025 do OWASP Top 10, o SSRF passou a fazer parte do A01 Broken Access Control)? É quando a aplicação faz uma requisição de rede para uma URL que VOCÊ controla, sem validar o destino. Como quem dispara é o SERVIDOR, você alcança o que ele alcança e você não: loopback (127.0.0.1), redes privadas (10/172.16/192.168) e, o prêmio em nuvem, o serviço de METADADOS em 169.254.169.254, que entrega credenciais temporárias de IAM (foi o vetor do caso Capital One). Validar só o hostname não basta — é preciso resolver o DNS e checar o IP final (cuidado com DNS rebinding e redirects).\n\nCOMO EXPLORAR: aponte o parâmetro de URL para alvos internos; na AWS, siga o IMDS em 2 passos — liste a role em .../iam/security-credentials/ e depois busque .../iam/security-credentials/<role> para obter a SecretAccessKey.\n\nReferências: OWASP A01:2025 · CWE-918 · OWASP SSRF Prevention Cheat Sheet. Links na aba Referências.',
     objective:
       'O endpoint de "preview de URL" busca qualquer URL do lado do servidor, sem validar destino. Use-o para alcançar a rede interna e seguir o fluxo IMDS da AWS em 2 passos (listar a role → obter as credenciais da role). Sucesso = capturar a SecretAccessKey da conta de nuvem — que você vai gastar no A08.',
     context:
-      'Passo 8 — pivot para a nuvem. O /api/a10/fetch-url da Nexus faz a requisição a partir do SERVIDOR (que enxerga a rede interna que você não enxerga) e não valida o destino. No A05 você já anotou o host de metadados 169.254.169.254; agora pede para o servidor buscá-lo e segue o fluxo IMDS para roubar credenciais temporárias de IAM. Foi assim no incidente da Capital One e é a cara dos CVE-2026-47938 (Adobe Campaign Classic, SSRF→code exec, CVSS 10.0) e CVE-2026-58508 (Gitea, SSRF via DNS rebinding).',
-    baseEndpoint: 'GET /api/a10/fetch-url?url=',
+      'Passo 8 — pivot para a nuvem. O /api/a01/fetch-url da Nexus faz a requisição a partir do SERVIDOR (que enxerga a rede interna que você não enxerga) e não valida o destino. No A02 você já anotou o host de metadados 169.254.169.254; agora pede para o servidor buscá-lo e segue o fluxo IMDS para roubar credenciais temporárias de IAM. Foi assim no incidente da Capital One e é a cara dos CVE-2026-47938 (Adobe Campaign Classic, SSRF→code exec, CVSS 10.0) e CVE-2026-58508 (Gitea, SSRF via DNS rebinding).',
+    baseEndpoint: 'GET /api/a01/fetch-url?url=',
     exampleRequests: [
-      { method: 'GET', path: '/api/a10/fetch-url?url=https://status.cybershield.local/health', note: 'Baseline: uma URL externa permitida (healthcheck). Explore: aponte o servidor para alvos internos/link-local.' },
+      { method: 'GET', path: '/api/a01/fetch-url?url=https://status.cybershield.local/health', note: 'Baseline: uma URL externa permitida (healthcheck). Explore: aponte o servidor para alvos internos/link-local.' },
     ],
     hints: [
       'SSRF: quem faz a requisição é o SERVIDOR. Teste alvos que só ele alcança: http://127.0.0.1:8080/, http://localhost:9200/_cat/indices.',
-      'Metadados em nuvem ficam em 169.254.169.254 (o host que vazou no A05). Comece listando a role: http://169.254.169.254/latest/meta-data/iam/security-credentials/',
+      'Metadados em nuvem ficam em 169.254.169.254 (o host que vazou no A02). Comece listando a role: http://169.254.169.254/latest/meta-data/iam/security-credentials/',
       'Fluxo IMDS (2 passos): a role listada é "ec2-app-role". Agora busque .../iam/security-credentials/ec2-app-role → vêm AccessKeyId e SecretAccessKey (esta é a flag e o X-Cloud-Key do A08).',
     ],
     writeup: {
@@ -744,7 +748,7 @@ router.get('/fetch-url', async (req, res) => {
       ],
     } as LabWriteup,
     references: [
-      { label: 'OWASP A10:2021 SSRF', url: 'https://owasp.org/Top10/A10_2021-Server-Side_Request_Forgery_%28SSRF%29/' },
+      { label: 'OWASP A01:2025 Broken Access Control (SSRF incorporado)', url: 'https://top10.owasp.org/2025/A01_2025-Broken_Access_Control/' },
       { label: 'OWASP SSRF Prevention Cheat Sheet', url: 'https://cheatsheetseries.owasp.org/cheatsheets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet.html' },
       { label: 'CWE-918: Server-Side Request Forgery', url: 'https://cwe.mitre.org/data/definitions/918.html' },
       { label: 'Caso real (2026): CVE-2026-47938 — SSRF no Adobe Campaign Classic levando a execução de código (CVSS 10.0)', url: 'https://nvd.nist.gov/vuln/detail/CVE-2026-47938' },
@@ -753,6 +757,79 @@ router.get('/fetch-url', async (req, res) => {
       { label: 'AWS IMDSv2 — mitigação de SSRF a metadados (contexto do caso Capital One)', url: 'https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/configuring-instance-metadata-service.html' },
     ],
     flag: 'CYBER{a10_ssrf_reached_the_cloud_metadata}',
+  },
+
+  // ───────────────────────────── A10 ─────────────────────────────
+  {
+    id: 'a10-fail-open',
+    owaspId: 'A10',
+    owaspTitle: 'Mishandling of Exceptional Conditions',
+    killChain: { step: 11, uses: 'Nenhum achado anterior é obrigatório: é um serviço independente da Nexus (tesouraria). O reconhecimento feito até aqui ajuda a pensar em "o que acontece quando o sistema falha".', provides: 'Fechamento da campanha: um voucher de tesouraria liberado sem passar pela análise de risco.' },
+    title: 'Fail-open: exceção do motor de risco aprova a transferência',
+    difficulty: 'Intermediario',
+    points: 150,
+    cwe: 'CWE-636',
+    tags: ['Error Handling', 'Fail-Open', 'Business Logic'],
+    primer:
+      'O QUE É MISHANDLING OF EXCEPTIONAL CONDITIONS (A10)? Categoria nova no OWASP Top 10:2025. É quando a aplicação não previne, não detecta ou não trata corretamente situações anormais — entrada inesperada, falha de dependência, timeout, estado inconsistente. Os dois erros clássicos: (1) FAIL-OPEN — o código captura a exceção e "segue em frente" como se estivesse tudo bem, liberando uma ação que deveria ser negada; (2) VAZAMENTO — a mensagem de erro entrega detalhes internos (stack, nomes de componentes, políticas).\n\nCOMO EXPLORAR: controles de segurança também falham. Mande ao controle algo que ele não espera (tipo errado, valor nulo, negativo, fora de faixa) e observe se a resposta muda de "negado/revisão" para "aprovado". Compare a resposta normal com a resposta ao erro.\n\nCOMO CORRIGIR: falhe FECHADO (negar por padrão quando o controle não conseguir decidir), valide entrada na borda, trate exceções no ponto certo, responda erro genérico ao cliente e registre o detalhe só no log interno.',
+    objective:
+      'O serviço de tesouraria aprova transferências até um limite e exige revisão manual acima dele, consultando um "motor de risco". Descubra o que acontece quando o motor recebe uma entrada que ele não sabe avaliar. Sucesso = obter o treasuryVoucher de uma transferência aprovada sem passar pela análise de risco.',
+    context:
+      'Passo 11 — o último elo. A tesouraria da Nexus Varejo expõe POST /api/a10/transfers/approve. Valores acima de 10.000 caem em revisão manual (202). O desenvolvedor, para "não derrubar o fluxo de pagamento", envolveu a chamada ao motor de risco em um try/catch que, em caso de exceção, assume que está tudo bem. Nenhuma outra etapa da kill chain é necessária aqui: o foco é entender o que acontece quando o controle de segurança quebra.',
+    baseEndpoint: 'POST /api/a10/transfers/approve',
+    exampleRequests: [
+      { method: 'POST', path: '/api/a10/transfers/approve', body: '{"transferId":"TR-1042","amount":25000}', note: 'Baseline: valor acima do limite → 202 (revisão manual). Explore: o que o motor de risco faz com entradas que ele não espera?' },
+    ],
+    hints: [
+      'O motor de risco espera um NÚMERO positivo. Envie o mesmo pedido trocando o tipo do campo amount (string, null, objeto) ou um valor negativo.',
+      'Se a resposta mudar de 202 para 200 com riskEngine "degraded (fail-open)", o catch está aprovando em vez de negar.',
+      'Envie {"transferId":"TR-1042","amount":"abc"}: a aprovação vem acompanhada do treasuryVoucher (a flag) e de uma internalNote que vaza o erro interno.',
+    ],
+    writeup: {
+      rootCause:
+        'O handler captura a exceção do motor de risco e assume o resultado "sem risco" (fail-open), em vez de negar a operação. Além disso, não valida o tipo de amount na borda e devolve a mensagem interna do erro ao cliente.',
+      impact:
+        'Qualquer pessoa que consiga provocar uma exceção no controle contorna a política de limite e aprova transferências sem revisão — fraude financeira. A mensagem interna vazada (internalNote) ainda ajuda o atacante a entender o componente e a refinar o ataque.',
+      vulnerableLanguage: 'typescript',
+      vulnerableCode: `app.post('/transfers/approve', (req, res) => {
+  let decision;
+  try {
+    decision = assessRisk(req.body.amount);   // lança se amount não for número
+  } catch (err) {
+    // FALHA: erro no controle => "segue o fluxo" (fail-open) + vaza err.message
+    return res.json({ status: 'approved', internalNote: err.message });
+  }
+  // ...
+});`,
+      secureLanguage: 'typescript',
+      secureCode: `const Body = z.object({ transferId: z.string(), amount: z.number().positive().finite() });
+app.post('/transfers/approve', (req, res) => {
+  const parsed = Body.safeParse(req.body);               // valida na borda
+  if (!parsed.success) return res.status(400).json({ error: 'requisição inválida' });
+  try {
+    const decision = assessRisk(parsed.data.amount);
+    // ...
+  } catch (err) {
+    logger.error({ err, transferId: parsed.data.transferId }, 'risk-engine failure'); // detalhe só no log
+    return res.status(503).json({ status: 'denied', error: 'não foi possível avaliar o risco' }); // fail-closed, resposta genérica
+  }
+});`,
+      remediation: [
+        'Falhe FECHADO: se o controle de segurança não conseguir decidir, negue (ou envie para revisão manual) — nunca aprove por padrão.',
+        'Valide tipo, faixa e formato da entrada na borda (schema validation) antes de chamar o controle.',
+        'Trate exceções no nível adequado, com um handler global de erros como rede de segurança.',
+        'Responda erros genéricos ao cliente e registre o detalhe técnico apenas em log interno, com alerta para falhas repetidas do motor de risco.',
+        'Teste os caminhos de falha: entradas nulas, negativas, de tipo errado, timeout e indisponibilidade do motor.',
+      ],
+    } as LabWriteup,
+    references: [
+      { label: 'OWASP A10:2025 Mishandling of Exceptional Conditions', url: 'https://top10.owasp.org/2025/A10_2025-Mishandling_of_Exceptional_Conditions/' },
+      { label: 'OWASP Error Handling Cheat Sheet', url: 'https://cheatsheetseries.owasp.org/cheatsheets/Error_Handling_Cheat_Sheet.html' },
+      { label: 'CWE-636: Not Failing Securely (Failing Open)', url: 'https://cwe.mitre.org/data/definitions/636.html' },
+      { label: 'CWE-755: Improper Handling of Exceptional Conditions', url: 'https://cwe.mitre.org/data/definitions/755.html' },
+      { label: 'CWE-209: Information Exposure Through an Error Message', url: 'https://cwe.mitre.org/data/definitions/209.html' },
+    ],
+    flag: 'CYBER{a10_failed_open_on_exception}',
   },
 ];
 

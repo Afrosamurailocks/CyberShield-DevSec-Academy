@@ -1,5 +1,5 @@
-import React, { memo } from 'react';
-import { CheckCircle2, Trophy, LayoutGrid, Lock, ShieldAlert, ShieldCheck, ListChecks, BadgeCheck, Bot, Terminal, Award } from 'lucide-react';
+import React, { memo, useEffect, useRef, useState } from 'react';
+import { CheckCircle2, Trophy, LayoutGrid, Lock, ShieldAlert, ShieldCheck, ListChecks, BadgeCheck, Bot, Award, LogOut, ChevronUp, UserCog } from 'lucide-react';
 import type { Lab, PrivacyModule, AppArea } from '../types';
 import type { TrailConfig } from '../trails';
 import { OWASP_META, ProgressRing, byKillChainOrder } from './ui';
@@ -11,7 +11,7 @@ interface PrivacyNav {
   activeId: string | null;
   onSelect: (m: PrivacyModule | null) => void;
   /** Entrada extra da área (ex.: laboratório de prompts na trilha LLM). */
-  lab?: { label: string; active: boolean; onOpen: () => void };
+  lab?: { code?: string; label: string; caption?: string; solved?: number; total?: number; active: boolean; onOpen: () => void };
 }
 
 interface SidebarProps {
@@ -27,6 +27,12 @@ interface SidebarProps {
   /** Jornada Security Champion (selo). */
   champion?: { active: boolean; onOpen: () => void };
   onNavigate?: () => void; // fecha o drawer no mobile
+  /** Conta autenticada: atalhos de conformidade por perfil, dados do usuário e saída. */
+  account?: {
+    name: string; roleLabel: string;
+    items: { id: string; label: string; icon: React.ReactNode; active: boolean; onOpen: () => void }[];
+    onAccount: () => void; accountActive: boolean; onLogout: () => void;
+  };
 }
 
 const AREAS: { id: AppArea; label: string; icon: React.ReactNode }[] = [
@@ -37,8 +43,60 @@ const AREAS: { id: AppArea; label: string; icon: React.ReactNode }[] = [
   { id: 'llm', label: 'LLM', icon: <Bot size={14} aria-hidden="true" /> },
 ];
 
+type Account = NonNullable<SidebarProps['account']>;
+
+/** Conta no rodapé: uma linha (avatar, nome, perfil) que abre um menu com os atalhos de conformidade, a conta e a saída. */
+function AccountMenu({ account, onNavigate }: Readonly<{ account: Account; onNavigate?: () => void }>) {
+  const [open, setOpen] = useState(false);
+  const root = useRef<HTMLDivElement>(null);
+  const trigger = useRef<HTMLButtonElement>(null);
+  const firstItem = useRef<HTMLButtonElement>(null);
+  const activeInside = account.accountActive || account.items.some((i) => i.active);
+
+  useEffect(() => {
+    if (!open) return;
+    firstItem.current?.focus();
+    const onDown = (e: MouseEvent) => { if (!root.current?.contains(e.target as Node)) setOpen(false); };
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') { setOpen(false); trigger.current?.focus(); e.stopPropagation(); } };
+    document.addEventListener('mousedown', onDown); document.addEventListener('keydown', onKey);
+    return () => { document.removeEventListener('mousedown', onDown); document.removeEventListener('keydown', onKey); };
+  }, [open]);
+
+  const run = (fn: () => void) => () => { setOpen(false); fn(); onNavigate?.(); };
+  const item = 'flex min-h-10 w-full items-center gap-2.5 rounded-md px-3 py-2 text-left text-[13px] font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[var(--color-offense)]';
+  const entries = [...account.items, { id: 'account', label: 'Minha conta', icon: <UserCog size={15} aria-hidden="true" />, active: account.accountActive, onOpen: account.onAccount }];
+
+  return (
+    <div ref={root} className="relative border-t border-[var(--color-line)] p-2">
+      {open && (
+        <div role="menu" aria-label="Conta e conformidade"
+          className="absolute inset-x-2 bottom-full z-30 mb-1 overflow-hidden rounded-lg border border-[var(--color-line)] bg-[var(--color-surface-2)] p-1 shadow-2xl shadow-black/50">
+          <p className="px-3 pb-1 pt-2 text-[11px] font-semibold text-slate-500">Conformidade</p>
+          {entries.map((it, i) => (
+            <button key={it.id} role="menuitem" ref={i === 0 ? firstItem : undefined} onClick={run(it.onOpen)} aria-current={it.active ? 'page' : undefined}
+              className={`${item} ${it.active ? 'bg-[var(--color-offense)]/15 text-slate-100' : 'text-slate-300 hover:bg-white/5 hover:text-slate-100'}`}>
+              <span className={it.active ? 'text-[var(--color-offense)]' : 'text-slate-400'}>{it.icon}</span>{it.label}
+            </button>
+          ))}
+          <div className="my-1 border-t border-[var(--color-line)]" role="separator" />
+          <button role="menuitem" onClick={run(account.onLogout)} className={`${item} text-slate-300 hover:bg-rose-500/10 hover:text-rose-200`}>
+            <LogOut size={15} aria-hidden="true" className="text-slate-400" />Sair da conta
+          </button>
+        </div>
+      )}
+      <button ref={trigger} onClick={() => setOpen((o) => !o)} aria-haspopup="menu" aria-expanded={open} aria-label={`Conta de ${account.name}: abrir menu`}
+        className={`flex min-h-12 w-full items-center gap-2.5 rounded-lg px-2 text-left transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[var(--color-offense)] ${
+          open || activeInside ? 'bg-[var(--color-surface-2)]' : 'hover:bg-[var(--color-surface-2)]/60'}`}>
+        <span aria-hidden="true" className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--color-offense)]/20 text-[13px] font-bold text-[var(--color-offense-soft)]">{account.name.trim().charAt(0).toUpperCase()}</span>
+        <span className="min-w-0 flex-1"><span className="block truncate text-[13px] font-medium text-slate-100">{account.name}</span><span className="block truncate text-[11px] text-slate-400">{account.roleLabel}</span></span>
+        <ChevronUp size={15} aria-hidden="true" className={`shrink-0 text-slate-500 transition-transform ${open ? 'rotate-180' : ''}`} />
+      </button>
+    </div>
+  );
+}
+
 /** Navegação persistente estilo workbench: marca, seletor de área, progresso e lista da área ativa. */
-export const Sidebar = memo(function Sidebar({ area, onArea, labs, solvedIds, activeId, totalPoints, maxPoints, onSelect, privacy, champion, onNavigate }: Readonly<SidebarProps>) {
+export const Sidebar = memo(function Sidebar({ area, onArea, labs, solvedIds, activeId, totalPoints, maxPoints, onSelect, privacy, champion, onNavigate, account }: Readonly<SidebarProps>) {
   const ordered = byKillChainOrder(labs);
   const go = (lab: Lab | null) => { onSelect(lab); onNavigate?.(); };
   const goPrivacy = (m: PrivacyModule | null) => { privacy.onSelect(m); onNavigate?.(); };
@@ -47,11 +105,12 @@ export const Sidebar = memo(function Sidebar({ area, onArea, labs, solvedIds, ac
   return (
     <nav aria-label="Navegação" className="flex h-full flex-col bg-[var(--color-surface)]">
       {/* Marca */}
-      <div className="border-b border-[var(--color-line)] px-4 py-4">
-        <img src="/brand/opah-logo-white.png" alt="Opah IT" className="h-6 w-auto" />
-        <div className="mt-3 min-w-0">
-          <h1 className="truncate text-sm font-semibold leading-tight">CyberShield</h1>
-          <p className="truncate text-[11px] leading-tight text-slate-400">DevSec Academy</p>
+      <div className="flex items-center gap-3 border-b border-[var(--color-line)] px-4 py-3">
+        <img src="/brand/opah-logo-white.png" alt="Opah IT" className="h-5 w-auto shrink-0" />
+        <span aria-hidden="true" className="h-6 w-px shrink-0 bg-[var(--color-line)]" />
+        <div className="min-w-0">
+          <h1 className="truncate text-[13px] font-semibold leading-tight">CyberShield</h1>
+          <p className="truncate text-[10.5px] leading-tight text-slate-400">DevSec Academy</p>
         </div>
       </div>
 
@@ -75,7 +134,7 @@ export const Sidebar = memo(function Sidebar({ area, onArea, labs, solvedIds, ac
       </div>
 
       {/* Progresso */}
-      <div className="mt-3 flex items-center gap-3 border-y border-[var(--color-line)] px-4 py-4">
+      <div className="mt-3 flex items-center gap-3 border-y border-[var(--color-line)] px-4 py-3">
         {isPrivacy ? (
           <>
             <ProgressRing value={privacy.doneIds.size} max={privacy.modules.length || 8} />
@@ -86,12 +145,12 @@ export const Sidebar = memo(function Sidebar({ area, onArea, labs, solvedIds, ac
           </>
         ) : (
           <>
-            <ProgressRing value={solvedIds.size} max={labs.length || 10} />
+            <ProgressRing value={solvedIds.size} max={labs.length || 11} />
             <div className="min-w-0">
               <p className="flex items-center gap-1.5 text-sm font-semibold text-slate-100">
                 <Trophy size={14} className="text-amber-400" aria-hidden="true" /> {totalPoints}<span className="text-slate-500">/{maxPoints} pts</span>
               </p>
-              <p className="mt-0.5 text-[11px] text-slate-400">OWASP Top 10 · 2021</p>
+              <p className="mt-0.5 text-[11px] text-slate-400">OWASP Top 10 · 2025</p>
             </div>
           </>
         )}
@@ -105,23 +164,14 @@ export const Sidebar = memo(function Sidebar({ area, onArea, labs, solvedIds, ac
         <LayoutGrid size={16} aria-hidden="true" /> {isPrivacy ? 'Visão da trilha' : 'Visão geral'}
       </button>
 
-      {isPrivacy && privacy.lab && (
-        <button onClick={() => { privacy.lab?.onOpen(); onNavigate?.(); }}
-          aria-current={privacy.lab.active ? 'page' : undefined}
-          className={`mx-2 mt-1 flex min-h-10 items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
-            privacy.lab.active ? 'bg-[var(--color-surface-2)] text-slate-100' : 'text-slate-400 hover:bg-[var(--color-surface-2)]/60 hover:text-slate-200'}`}>
-          <Terminal size={16} aria-hidden="true" /> {privacy.lab.label}
-        </button>
-      )}
-
       {/* Lista da área ativa */}
-      <div className="mt-2 flex-1 overflow-y-auto px-2 pb-4">
+      <div className="mt-2 min-h-0 flex-1 overflow-y-auto px-2 pb-3">
         <p className="px-3 py-1.5 text-[11px] font-semibold text-slate-500">
           {isPrivacy ? `${privacy.config.unitPlural.charAt(0).toUpperCase()}${privacy.config.unitPlural.slice(1)} (ordem sugerida)` : 'Laboratórios (ordem de exploração)'}
         </p>
         <ul className="space-y-0.5">
           {isPrivacy
-            ? privacy.modules.map((m) => {
+            ? [...privacy.modules.map((m) => {
               const done = privacy.doneIds.has(m.id);
               const active = m.id === privacy.activeId;
               return (
@@ -143,7 +193,30 @@ export const Sidebar = memo(function Sidebar({ area, onArea, labs, solvedIds, ac
                   </button>
                 </li>
               );
-            })
+            }),
+              ...(privacy.lab ? [(() => {
+                const lab = privacy.lab;
+                const finished = Boolean(lab.total) && (lab.solved ?? 0) >= (lab.total ?? 0);
+                return (
+                  <li key="final-lab">
+                    <button onClick={() => { lab.onOpen(); onNavigate?.(); }} aria-current={lab.active ? 'page' : undefined}
+                      className={`group flex min-h-11 w-full items-center gap-2.5 rounded-md px-3 py-1.5 text-left transition-colors ${
+                        lab.active ? 'bg-[var(--color-surface-2)]' : 'hover:bg-[var(--color-surface-2)]/60'}`}>
+                      <span className="flex w-10 shrink-0 items-center gap-2">
+                        <span className={`h-5 w-0.5 rounded-full ${privacy.config.bar}`} aria-hidden="true" />
+                        <span className={`font-mono text-xs font-semibold ${lab.active ? 'text-slate-100' : 'text-slate-400'}`}>{lab.code ?? 'LF'}</span>
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className={`block truncate text-[13px] font-medium ${lab.active ? 'text-slate-100' : 'text-slate-300 group-hover:text-slate-100'}`}>{lab.label}</span>
+                        <span className="block truncate text-[10.5px] text-slate-500">{lab.caption}</span>
+                      </span>
+                      {finished
+                        ? <CheckCircle2 size={15} className="shrink-0 text-[var(--color-defense)]" aria-label="Concluído" />
+                        : <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-slate-600" aria-label="Pendente" />}
+                    </button>
+                  </li>
+                );
+              })()] : [])]
             : ordered.map((lab) => {
               const done = solvedIds.has(lab.id);
               const active = lab.id === activeId;
@@ -172,11 +245,13 @@ export const Sidebar = memo(function Sidebar({ area, onArea, labs, solvedIds, ac
         </ul>
       </div>
 
-      <div className="border-t border-[var(--color-line)] px-4 py-2.5 text-[10px] text-slate-500">
+      {account && <AccountMenu account={account} onNavigate={onNavigate} />}
+
+      {!account && <div className="border-t border-[var(--color-line)] px-4 py-2.5 text-[10px] text-slate-500">
         <span className="flex items-center gap-1">
           <Lock size={11} aria-hidden="true" /> {isPrivacy ? privacy.config.sidebarFoot : 'Treino local · backend vulnerável'}
         </span>
-      </div>
+      </div>}
     </nav>
   );
 });

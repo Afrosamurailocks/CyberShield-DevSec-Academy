@@ -28,5 +28,5 @@ export const TRACK_META: Omit<TrackInput, 'done' | 'total'>[] = [
   { id: 'iso', label: 'ISO/IEC 27001:2022', short: 'ISO 27001', area: 'iso', unit: 'cenários', why: 'O sistema de gestão por trás da certificação: cláusulas, riscos e Anexo A.' },
   { id: 'owasp', label: 'OWASP Top 10 (labs web)', short: 'OWASP web', area: 'seguranca', unit: 'labs', why: 'Atacar para entender: explore as falhas web e aprenda a corrigir.' },
   { id: 'llm', label: 'Segurança com LLM (trilha)', short: 'LLM trilha', area: 'llm', unit: 'cenários', why: 'Riscos de chatbots, RAG e agentes: o OWASP Top 10 for LLM Applications.' },
-  { id: 'llmlab', label: 'Segurança com LLM (laboratório)', short: 'LLM lab', area: 'llm', unit: 'flags', why: 'Prática: ataque assistentes simulados e capture as 10 flags.' },
+  { id: 'llmlab', label: 'Segurança com LLM (avaliação final: laboratório)', short: 'LLM lab', area: 'llm', unit: 'flags', why: 'Prática: ataque assistentes simulados e capture as 10 flags.' },
 ];

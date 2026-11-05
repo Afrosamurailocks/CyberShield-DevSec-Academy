@@ -143,3 +143,32 @@
   body.champion-print #champion-print img { width: 100%; height: auto; }
   body.champion-print { background: #fff !important; }
 }
+
+/* Impressão do relatório de desempenho (PDF de evidência): tema claro, A4 paisagem, fora do #root */
+#report-print { display: none; }
+@media print {
+  body.report-print > #root { display: none !important; }
+  body.report-print { background: #fff !important; }
+  body.report-print #report-print { display: block !important; color: #1e1e20; font: 9pt/1.4 'Open Sans', Arial, sans-serif; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  #report-print .rp-head { display: flex; align-items: center; gap: 14px; background: #1e1e20; color: #fff; padding: 10px 14px; border-bottom: 3px solid #ee7d30; }
+  #report-print .rp-head img { height: 22px; width: auto; }
+  #report-print .rp-eyebrow { margin: 0; font-size: 8pt; letter-spacing: .08em; text-transform: uppercase; color: #f4a23f; }
+  #report-print h1 { margin: 0; font: 600 15pt/1.2 Poppins, Arial, sans-serif; color: #fff; }
+  #report-print h2 { margin: 14px 0 5px; font: 600 11pt/1.2 Poppins, Arial, sans-serif; color: #1e1e20; border-left: 3px solid #ee7d30; padding-left: 7px; break-after: avoid; }
+  #report-print .rp-draft { margin: 6px 0; padding: 4px 8px; background: #fff4e5; border: 1px solid #f4a23f; color: #7a3d00; font-size: 8pt; font-weight: 600; }
+  #report-print table { width: 100%; border-collapse: collapse; }
+  #report-print th, #report-print td { border: 1px solid #c9c9cc; padding: 3px 5px; text-align: left; vertical-align: top; }
+  #report-print thead th { background: #eeeeef; font-size: 7.5pt; text-transform: uppercase; letter-spacing: .03em; }
+  #report-print thead { display: table-header-group; }
+  #report-print tr { break-inside: avoid; }
+  #report-print .rp-meta th { width: 12%; background: #f4f4f5; font-size: 8pt; }
+  #report-print .rp-people td, #report-print .rp-people th { font-size: 7.5pt; }
+  #report-print .rp-people td span { color: #55555a; }
+  #report-print .mono { font-family: 'JetBrains Mono', Consolas, monospace; font-size: 7pt; word-break: break-all; }
+  #report-print .rp-kpis { display: flex; gap: 6px; margin: 8px 0; }
+  #report-print .rp-kpis div { flex: 1; border: 1px solid #c9c9cc; padding: 4px 8px; }
+  #report-print .rp-kpis span { display: block; font-size: 7pt; text-transform: uppercase; color: #55555a; }
+  #report-print .rp-kpis strong { font: 600 13pt Poppins, Arial, sans-serif; }
+  #report-print .rp-notes { margin: 4px 0; padding-left: 16px; font-size: 8pt; }
+  #report-print .rp-foot { position: fixed; bottom: 0; left: 0; right: 0; margin: 0; padding-top: 3px; border-top: 1px solid #c9c9cc; font-size: 7pt; color: #55555a; text-align: center; }
+}

@@ -1,5 +1,5 @@
 /**
- * Endpoints VULNERAVEIS dos laboratorios OWASP A01..A10.
+ * Endpoints VULNERAVEIS dos laboratorios OWASP A01..A10 (edicao 2025).
  *
  * Contrato de API (api-designer):
  *  - JSON em camelCase, consistente.
@@ -92,30 +92,30 @@ export function mountLabs(api: Router): void {
     res.json({ updated: true, userId: target, newNote: note, profile: await buildProfile(target) });
   });
 
-  // ═══════════════ A02 — Cryptographic Failures (token reversivel) ═══════════════
-  const a02 = Router();
-  a02.post('/login', async (req: Request, res: Response) => {
+  // ═══════════════ A04 — Cryptographic Failures (token reversivel) ═══════════════
+  const a04 = Router();
+  a04.post('/login', async (req: Request, res: Response) => {
     const { username, password } = req.body ?? {};
     const u: any = await db.prepare('SELECT * FROM users WHERE username = ?').get(String(username ?? ''));
     if (!u || u.password_md5 !== md5(String(password ?? '')))
       return problem(res, 401, 'Invalid Credentials', 'Usuário ou senha inválidos.');
-    // FALHA A02: token "protegido" so com Base64 (encoding != criptografia; sem assinatura).
+    // FALHA A04: token "protegido" so com Base64 (encoding != criptografia; sem assinatura).
     res.json({ sessionToken: b64url(JSON.stringify({ sub: u.username, role: u.role })), tokenType: 'Bearer' });
   });
-  a02.get('/account', (req: Request, res: Response) => {
+  a04.get('/account', (req: Request, res: Response) => {
     let claims: any;
     try { claims = JSON.parse(b64urlDecode(bearer(req))); } catch { claims = null; }
     if (!claims || typeof claims !== 'object')
-      return problem(res, 401, 'Unauthorized', 'Sessão ausente ou inválida. Autentique-se em POST /api/a02/login.');
+      return problem(res, 401, 'Unauthorized', 'Sessão ausente ou inválida. Autentique-se em POST /api/a04/login.');
     const account: any = { username: claims.sub, role: claims.role };
     // dado sensivel so da conta admin — exposto ao forjar role=admin no token sem integridade:
     if (claims.role === 'admin') account.privilegedApiKey = secretOf('a02-reversible-token');
     res.json(account);
   });
 
-  // ═══════════════ A03 — Injection (SQLi) ═══════════════
-  const a03 = Router();
-  a03.post('/login', async (req: Request, res: Response) => {
+  // ═══════════════ A05 — Injection (SQLi) ═══════════════
+  const a05 = Router();
+  a05.post('/login', async (req: Request, res: Response) => {
     const { username, password } = req.body ?? {};
     // FALHA: concatenacao direta. 5 colunas -> suporta bypass booleano E UNION dump.
     const sql =
@@ -137,24 +137,24 @@ export function mountLabs(api: Router): void {
     });
   });
 
-  // ═══════════════ A04 — Insecure Design (token de reset previsivel) ═══════════════
-  const a04 = Router();
+  // ═══════════════ A06 — Insecure Design (token de reset previsivel) ═══════════════
+  const a06 = Router();
   // Log de auditoria do gateway de e-mail: confirma o ENVIO (destinatario/assunto/hora)
   // mas MASCARA o link/token no conteudo — por politica de DLP, nem o log interno
   // guarda o segredo em claro. Serve para o aluno "ver o e-mail existe" sem conseguir
   // lê-lo: ele precisa continuar prevendo o token por /server-time.
   const a04Mailbox = new Map<string, { sentAt: string }>();
-  a04.get('/server-time', (_req, res) => res.json({ epochSeconds: Math.floor(Date.now() / 1000) }));
-  a04.post('/forgot', async (req: Request, res: Response) => {
+  a06.get('/server-time', (_req, res) => res.json({ epochSeconds: Math.floor(Date.now() / 1000) }));
+  a06.post('/forgot', async (req: Request, res: Response) => {
     const { username } = req.body ?? {};
     const u: any = await db.prepare('SELECT id FROM users WHERE username = ?').get(String(username ?? ''));
     // nao revela se o usuario existe na resposta; mas registra o envio para o mailbox simulado.
     if (u) a04Mailbox.set(String(username), { sentAt: new Date().toISOString() });
     res.status(202).json({ message: 'Se o usuário existir, enviaremos um link de redefinição por e-mail.' });
   });
-  a04.get('/mailbox/:username', (req: Request, res: Response) => {
+  a06.get('/mailbox/:username', (req: Request, res: Response) => {
     const sent = a04Mailbox.get(req.params.username);
-    if (!sent) return problem(res, 404, 'No Email', 'Nenhuma solicitação de redefinição foi enviada para este usuário ainda. Chame POST /api/a04/forgot primeiro.');
+    if (!sent) return problem(res, 404, 'No Email', 'Nenhuma solicitação de redefinição foi enviada para este usuário ainda. Chame POST /api/a06/forgot primeiro.');
     // FALHA DE DESIGN exposta aqui, de propósito: o e-mail FOI enviado (isso é real),
     // mas o conteúdo com o token é mascarado — nem o log interno de auditoria guarda
     // o segredo em claro. Ou seja: "ter acesso ao e-mail" nunca foi o caminho.
@@ -167,7 +167,7 @@ export function mountLabs(api: Router): void {
       note: 'Conteúdo mascarado pela política de DLP do gateway de e-mail — o token não fica visível nem neste log de auditoria.',
     });
   });
-  a04.post('/reset', async (req: Request, res: Response) => {
+  a06.post('/reset', async (req: Request, res: Response) => {
     const { username, token, newPassword } = req.body ?? {};
     const now = Math.floor(Date.now() / 1000);
     const t = Number(token);
@@ -181,9 +181,9 @@ export function mountLabs(api: Router): void {
     res.json(body);
   });
 
-  // ═══════════════ A05 — Security Misconfiguration ═══════════════
-  const a05 = Router();
-  a05.get('/', (_req, res) =>
+  // ═══════════════ A02 — Security Misconfiguration ═══════════════
+  const a02 = Router();
+  a02.get('/', (_req, res) =>
     // MISCONFIG: o indice do servico (200) lista rotas internas em producao,
     // inclusive um endpoint de diagnostico que nunca deveria estar exposto.
     res.json({
@@ -191,12 +191,12 @@ export function mountLabs(api: Router): void {
       environment: 'production',
       status: 'ok',
       endpoints: [
-        'GET /api/a05/health',
-        'GET /api/a05/debug/env   (diagnostico interno — NAO deveria estar exposto em producao)',
+        'GET /api/a02/health',
+        'GET /api/a02/debug/env   (diagnostico interno — NAO deveria estar exposto em producao)',
       ],
     }));
-  a05.get('/debug/env', (_req, res) => {
-    // FALHA: expoe variaveis de ambiente (segredos) sem auth. KILL CHAIN: JWT_SECRET -> A07; host -> A10.
+  a02.get('/debug/env', (_req, res) => {
+    // FALHA: expoe variaveis de ambiente (segredos) sem auth. KILL CHAIN: JWT_SECRET -> A07; host -> A01 (SSRF).
     res.json({
       nodeEnv: 'production',
       dbHost: 'prod-cluster-01.internal',
@@ -207,9 +207,9 @@ export function mountLabs(api: Router): void {
     });
   });
 
-  // ═══════════════ A06 — Vulnerable & Outdated Components (prototype pollution) ═══════════════
-  const a06 = Router();
-  a06.get('/version', (_req, res) =>
+  // ═══════════════ A03 — Vulnerable & Outdated Components (prototype pollution) ═══════════════
+  const a03 = Router();
+  a03.get('/version', (_req, res) =>
     res.json({ dependency: 'lodash', version: '4.17.4', advisory: 'CVE-2019-10744 — prototype pollution em merge/mergeWith/defaultsDeep (corrigido em 4.17.12)' }));
   const vulnerableMerge = (target: any, src: any): any => {
     for (const k in src) {
@@ -218,7 +218,7 @@ export function mountLabs(api: Router): void {
     }
     return target;
   };
-  a06.post('/merge-config', (req: Request, res: Response) => {
+  a03.post('/merge-config', (req: Request, res: Response) => {
     const config: any = { theme: 'dark', isAdmin: false };
     try {
       vulnerableMerge(config, req.body ?? {});
@@ -247,7 +247,7 @@ export function mountLabs(api: Router): void {
     let header: any, payload: any;
     try { header = JSON.parse(b64urlDecode(h)); payload = JSON.parse(b64urlDecode(p)); }
     catch { return problem(res, 400, 'Malformed Token', 'JWT malformado.'); }
-    // FALHA 1: aceita alg=none em qualquer caixa. FALHA 2: segredo fraco/fixo (vaza no A05).
+    // FALHA 1: aceita alg=none em qualquer caixa. FALHA 2: segredo fraco/fixo (vaza no A02).
     if (String(header.alg).toLowerCase() !== 'none') {
       const expected = b64url(crypto.createHmac('sha256', JWT_SECRET).update(`${h}.${p}`).digest());
       if (sig !== expected) return problem(res, 401, 'Invalid Signature', 'Assinatura do JWT inválida.');
@@ -265,10 +265,10 @@ export function mountLabs(api: Router): void {
   }));
   const isNodeSerializeRce = (s: string) => /_\$\$ND_FUNC\$\$_[\s\S]*\}\s*\(\s*\)/.test(s);
   a08.post('/import-profile', (req: Request, res: Response) => {
-    // KILL CHAIN (mecanico): o deploy interno exige a credencial AWS roubada via SSRF no A10.
+    // KILL CHAIN (mecanico): o deploy interno exige a credencial AWS roubada via SSRF no A01 (SSRF).
     if (String(req.headers['x-cloud-key'] ?? '') !== secretOf('a10-ssrf'))
       return problem(res, 401, 'Cloud Credential Required',
-        'Deploy interno bloqueado: envie a SecretAccessKey (roubada via SSRF no lab A10) no header X-Cloud-Key.');
+        'Deploy interno bloqueado: envie a SecretAccessKey (roubada via SSRF no lab A01 (SSRF)) no header X-Cloud-Key.');
     const data = String((req.body ?? {}).data ?? '');
     // CODIGO REAL seria require('node-serialize').unserialize(data) -> RCE no IIFE _$$ND_FUNC$$_.
     if (isNodeSerializeRce(data))
@@ -317,8 +317,8 @@ export function mountLabs(api: Router): void {
     });
   });
 
-  // ═══════════════ A10 — SSRF (resolver mock da rede interna) ═══════════════
-  const a10 = Router();
+  // ═══════════════ A01 (SSRF incorporado ao A01 em 2025) — SSRF (resolver mock da rede interna) ═══════════════
+  const ssrf = Router();
   const awsCreds = JSON.stringify({
     Code: 'Success', Type: 'AWS-HMAC', LastUpdated: '2026-01-10T12:00:00Z',
     AccessKeyId: 'ASIAEXAMPLEKEYID', SecretAccessKey: secretOf('a10-ssrf'),
@@ -336,7 +336,7 @@ export function mountLabs(api: Router): void {
     internal[`${lb}:8080/`] = internalAdmin;
     internal[`${lb}:9200/_cat/indices`] = 'health status index docs.count\ngreen open users 4';
   }
-  a10.get('/fetch-url', (req: Request, res: Response) => {
+  ssrf.get('/fetch-url', (req: Request, res: Response) => {
     const raw = String(req.query.url ?? '');
     let host = '', path = '';
     try { const u = new URL(raw); host = u.host; path = u.pathname; }
@@ -347,6 +347,39 @@ export function mountLabs(api: Router): void {
     res.type(resolved.startsWith('{') ? 'application/json' : 'text/plain').send(resolved);
   });
 
-  for (const [p, r] of [['a01', a01], ['a02', a02], ['a03', a03], ['a04', a04], ['a05', a05], ['a06', a06], ['a07', a07], ['a08', a08], ['a09', a09], ['a10', a10]] as const)
+  // ═══════════════ A10 — Mishandling of Exceptional Conditions (fail-open) ═══════════════
+  const a10 = Router();
+  const TRANSFER_LIMIT = 10000;
+  // "Motor de risco" da Nexus: LANCA exceção diante de entrada inesperada (nao numerica, nao finita, <= 0).
+  const assessRisk = (amount: unknown): 'ok' | 'review' => {
+    if (typeof amount !== 'number' || !Number.isFinite(amount) || amount <= 0)
+      throw new TypeError(`risk-engine: amount invalido (tipo=${typeof amount})`);
+    return amount > TRANSFER_LIMIT ? 'review' : 'ok';
+  };
+  a10.get('/', (_req, res) => res.json({
+    service: 'nexus-treasury', routes: ['POST /api/a10/transfers/approve'],
+    policy: `transferencias acima de ${TRANSFER_LIMIT} exigem revisao manual`,
+  }));
+  a10.post('/transfers/approve', (req: Request, res: Response) => {
+    const { transferId, amount } = req.body ?? {};
+    let decision: 'ok' | 'review';
+    try {
+      decision = assessRisk(amount);
+    } catch (err) {
+      // FALHA (CWE-636/755): a excecao do motor de risco e tratada como "sem risco" (fail-open)
+      // e a mensagem interna vaza na resposta. O correto e negar (fail-closed) e responder generico.
+      return res.json({
+        status: 'approved', transferId: String(transferId ?? 'TR-?'),
+        riskEngine: 'degraded (fail-open)', internalNote: (err as Error).message,
+        treasuryVoucher: secretOf('a10-fail-open'),
+      });
+    }
+    if (decision === 'review')
+      return res.status(202).json({ status: 'pending_manual_review', transferId: String(transferId ?? 'TR-?'), amount });
+    res.json({ status: 'approved', transferId: String(transferId ?? 'TR-?'), amount, riskEngine: 'ok' });
+  });
+
+  // Prefixos seguem a numeracao OWASP Top 10:2025; o SSRF (incorporado ao A01) fica sob /api/a01.
+  for (const [p, r] of [['a01', a01], ['a01', ssrf], ['a02', a02], ['a03', a03], ['a04', a04], ['a05', a05], ['a06', a06], ['a07', a07], ['a08', a08], ['a09', a09], ['a10', a10]] as const)
     api.use('/' + p, r);
 }

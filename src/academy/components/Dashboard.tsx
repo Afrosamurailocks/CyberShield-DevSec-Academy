@@ -33,7 +33,7 @@ export function Dashboard({ labs, solvedIds, totalPoints, maxPoints, onOpen }: {
 }) {
   const pct = labs.length ? Math.round((solvedIds.size / labs.length) * 100) : 0;
   // Proximo passo segue a ordem REAL de exploracao (killChain.step), nao o numero
-  // OWASP: o A08, por exemplo, exige um achado do A10, que vem depois dele na
+  // OWASP: o A08, por exemplo, exige um achado do lab de SSRF (A01), que vem depois dele na
   // numeracao. Ver byKillChainOrder em ./ui.tsx.
   const nextLab = byKillChainOrder(labs).find((l) => !solvedIds.has(l.id));
 
@@ -43,7 +43,7 @@ export function Dashboard({ labs, solvedIds, totalPoints, maxPoints, onOpen }: {
         <div className="max-w-2xl">
           <h2 className="text-2xl font-semibold">Visão geral</h2>
           <p className="mt-1.5 text-sm leading-relaxed text-slate-400">
-            Dez falhas do OWASP Top 10 encadeadas em um pentest black-box. Explore cada vulnerabilidade, entenda a causa e aplique a correção.
+            Onze labs do OWASP Top 10:2025 encadeados em um pentest black-box. Explore cada vulnerabilidade, entenda a causa e aplique a correção.
           </p>
         </div>
         <div className="flex shrink-0 gap-2">

@@ -7,7 +7,7 @@
  * A fachada expõe a MESMA API nos dois modos: `db.prepare(sql).get/all/run(...)`
  * (agora assíncronos) + `db.exec(sql)`. Placeholders `?` são traduzidos para `$1,$2…`
  * no Postgres. IMPORTANTE: usamos conexão Postgres DIRETA (não supabase-js/PostgREST)
- * de propósito, para que o lab A03 (SQL Injection por concatenação) continue real.
+ * de propósito, para que o lab A05 (SQL Injection por concatenação) continue real.
  *
  * ATENÇÃO (contexto didático): o schema é propositalmente inseguro (senhas MD5 sem
  * salt, segredos em claro) porque é alvo dos laboratórios OWASP. NUNCA use em produção.
@@ -16,8 +16,8 @@ import { DatabaseSync } from 'node:sqlite';
 import crypto from 'node:crypto';
 import pg from 'pg';
 
-/** MD5 sem salt — intencionalmente fraco (alvo dos labs A02/A03). NAO corrigir:
- * e o hash fraco que o lab A02 ensina o aluno a quebrar. */
+/** MD5 sem salt — intencionalmente fraco (alvo dos labs A04/A05). NAO corrigir:
+ * e o hash fraco que o lab A04 ensina o aluno a quebrar. */
 export const md5 = (s: string) => crypto.createHash('md5').update(s).digest('hex'); // NOSONAR (typescript:S4790 — proposital, ver comentario acima)
 
 /** true quando o backend ativo é o Postgres/Supabase (DATABASE_URL definido). */
@@ -74,7 +74,7 @@ function makePostgres(): Db {
 export const db: Db = usingPostgres ? makePostgres() : makeSqlite();
 
 // DDL compatível com SQLite E Postgres. DROP+CREATE a cada boot => labs sempre
-// em estado conhecido (ex.: o A04 reseta a senha do admin; o reseed restaura).
+// em estado conhecido (ex.: o A06 reseta a senha do admin; o reseed restaura).
 const SCHEMA = `
 DROP TABLE IF EXISTS users;
 DROP TABLE IF EXISTS invoices;
@@ -83,7 +83,7 @@ DROP TABLE IF EXISTS reset_tokens;
 CREATE TABLE users (
   id INTEGER PRIMARY KEY,
   username TEXT UNIQUE NOT NULL,
-  password_md5 TEXT NOT NULL,       -- MD5 sem salt (A02/A03)
+  password_md5 TEXT NOT NULL,       -- MD5 sem salt (A04/A05)
   role TEXT NOT NULL DEFAULT 'user',
   full_name TEXT,
   salary INTEGER,

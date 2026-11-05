@@ -67,3 +67,22 @@ test('SVG do selo: bem formado, com um segmento por trilha e estado bloqueado', 
   assert.ok(open.includes('Nível Bronze') && locked.includes('Em andamento'));
   assert.equal((open.match(/stroke-width="16"/g) ?? []).length >= 6 * 1, true);
 });
+
+test('avaliação final obrigatória: sem ela não há nível, nem Bronze, mesmo com 100% nas demais', () => {
+  const t = mk([100, 100, 100, 100, 100, 100]);
+  t[1] = { ...t[1], final: { done: 14, total: 15 } }; // 99% da trilha, final pendente
+  const s = evaluate(t);
+  assert.equal(s.tier, null);
+  assert.deepEqual(s.pendingFinals, ['t1']);
+  assert.equal(s.next?.tier.id, 'bronze');
+  assert.deepEqual(s.next?.missing.map((m) => [m.id, m.final]), [['t1', true]]);
+  t[1] = { ...t[1], done: 100, final: { done: 15, total: 15 } };
+  assert.equal(evaluate(t).tier?.id, 'ouro', 'final concluída libera o nível');
+});
+
+test('avaliação final pendente também bloqueia quando o percentual da trilha já passa de 85%', () => {
+  const t = mk([100, 100, 100, 100, 100, 100]);
+  t[0] = { ...t[0], done: 93, final: { done: 3, total: 15 } };
+  assert.equal(evaluate(t).tier, null);
+  assert.equal(evaluate(mk([100, 100, 100, 100, 100, 100])).pendingFinals.length, 0);
+});

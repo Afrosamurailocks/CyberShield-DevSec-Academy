@@ -5,7 +5,7 @@ import type { Lab } from '../types';
 /**
  * Ordena pela ordem REAL de exploração (killChain.step), não pelo número OWASP.
  * Alguns labs exigem tecnicamente um achado de um lab posterior na numeração OWASP
- * (ex.: A08 exige a chave roubada no A10) — navegar por A01..A10 faria o aluno
+ * (ex.: A08 exige a chave roubada no lab de SSRF, que na edição 2025 é parte do A01) — navegar por A01..A10 faria o aluno
  * travar numa dependência que ainda não existe. Usado em Sidebar, LabCatalog e no
  * "Continuar" do Dashboard para que a navegação siga sempre a ordem resolvível.
  */
@@ -17,15 +17,15 @@ export function byKillChainOrder(labs: Lab[]): Lab[] {
 // `accent` é usado apenas como filete/marcador: a cor identifica a categoria, não preenche blocos.
 export const OWASP_META: Record<string, { label: string; accent: string; ring: string; text: string }> = {
   A01: { label: 'Broken Access Control', accent: 'bg-pink-500', ring: 'ring-pink-500/30', text: 'text-pink-300' },
-  A02: { label: 'Cryptographic Failures', accent: 'bg-amber-500', ring: 'ring-amber-500/30', text: 'text-amber-300' },
-  A03: { label: 'Injection', accent: 'bg-red-500', ring: 'ring-red-500/30', text: 'text-red-300' },
-  A04: { label: 'Insecure Design', accent: 'bg-fuchsia-500', ring: 'ring-fuchsia-500/30', text: 'text-fuchsia-300' },
-  A05: { label: 'Security Misconfiguration', accent: 'bg-orange-500', ring: 'ring-orange-500/30', text: 'text-orange-300' },
-  A06: { label: 'Vulnerable Components', accent: 'bg-yellow-500', ring: 'ring-yellow-500/30', text: 'text-yellow-300' },
-  A07: { label: 'Auth Failures', accent: 'bg-sky-500', ring: 'ring-sky-500/30', text: 'text-sky-300' },
+  A02: { label: 'Security Misconfiguration', accent: 'bg-orange-500', ring: 'ring-orange-500/30', text: 'text-orange-300' },
+  A03: { label: 'Supply Chain Failures', accent: 'bg-yellow-500', ring: 'ring-yellow-500/30', text: 'text-yellow-300' },
+  A04: { label: 'Cryptographic Failures', accent: 'bg-amber-500', ring: 'ring-amber-500/30', text: 'text-amber-300' },
+  A05: { label: 'Injection', accent: 'bg-red-500', ring: 'ring-red-500/30', text: 'text-red-300' },
+  A06: { label: 'Insecure Design', accent: 'bg-fuchsia-500', ring: 'ring-fuchsia-500/30', text: 'text-fuchsia-300' },
+  A07: { label: 'Authentication Failures', accent: 'bg-sky-500', ring: 'ring-sky-500/30', text: 'text-sky-300' },
   A08: { label: 'Integrity Failures', accent: 'bg-violet-500', ring: 'ring-violet-500/30', text: 'text-violet-300' },
-  A09: { label: 'Logging & Monitoring', accent: 'bg-teal-500', ring: 'ring-teal-500/30', text: 'text-teal-300' },
-  A10: { label: 'SSRF', accent: 'bg-emerald-500', ring: 'ring-emerald-500/30', text: 'text-emerald-300' },
+  A09: { label: 'Logging & Alerting', accent: 'bg-teal-500', ring: 'ring-teal-500/30', text: 'text-teal-300' },
+  A10: { label: 'Exceptional Conditions', accent: 'bg-emerald-500', ring: 'ring-emerald-500/30', text: 'text-emerald-300' },
 };
 
 export const DIFFICULTY_COLOR: Record<string, string> = {

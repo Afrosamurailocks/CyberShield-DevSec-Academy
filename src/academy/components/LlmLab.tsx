@@ -12,6 +12,9 @@ const MAX = 400;
 const FOCUS = 'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-offense)]';
 
 /** Laboratório de prompts: o colaborador conversa com assistentes simulados e tenta capturar a flag. */
+/** Níveis das dicas: do mais sutil ao mais direto (o servidor envia 4 por lab). */
+const HINT_LEVELS = ['Observe', 'Por quê', 'Monte o prompt', 'Na prática'];
+
 export function LlmLab() {
   const [labs, setLabs] = useState<PromptLabInfo[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -63,7 +66,7 @@ export function LlmLab() {
   }, [draft, lab, chats]);
 
   const askHint = async () => {
-    if (!lab || shownHints.length >= 3) return;
+    if (!lab || shownHints.length >= lab.hintCount) return;
     try {
       const r = await hintPromptLab(lab.id, shownHints.length);
       setHints((h) => ({ ...h, [lab.id]: [...(h[lab.id] ?? []), r.hint] }));
@@ -94,7 +97,7 @@ export function LlmLab() {
   return (
     <div className="space-y-6">
       <header className="border-b border-[var(--color-line)] pb-5">
-        <h2 className="text-2xl font-semibold">Laboratório de prompts</h2>
+        <h2 className="text-2xl font-semibold">Avaliação final: Laboratório de prompts</h2>
         <p className="mt-1.5 max-w-3xl text-[15px] leading-relaxed text-slate-400">
           Converse com assistentes propositalmente vulneráveis e tente capturar a flag de cada um, uma por categoria do OWASP LLM Top 10. Depois de capturar, você vê por que funcionou e como corrigir.
         </p>
@@ -196,15 +199,15 @@ export function LlmLab() {
 
           <div className="grid gap-4 md:grid-cols-2">
             <Panel title="Dicas" tone="info" icon={<Lightbulb size={15} className="text-sky-400" aria-hidden="true" />}>
-              {shownHints.length === 0 && <p className="text-sm text-slate-400">Tente sozinho primeiro. Se travar, peça uma dica (são 3, da mais sutil à mais direta).</p>}
+              {shownHints.length === 0 && <p className="text-sm text-slate-400">Tente sozinho primeiro. Se travar, peça uma dica: são {lab.hintCount}, em níveis (o que observar, o conceito, a estrutura do ataque e um exemplo pronto com a nota para o relatório).</p>}
               <ol className="space-y-2">
                 {shownHints.map((h, i) => (
-                  <li key={i} className="flex gap-2 text-sm leading-relaxed text-slate-300"><span className="font-mono text-xs text-sky-300">{i + 1}.</span><span>{h}</span></li>
+                  <li key={i} className="flex gap-2 text-sm leading-relaxed text-slate-300"><span className="font-mono text-xs text-sky-300">{i + 1}.</span><span><strong className="mr-1.5 text-[11px] font-semibold uppercase tracking-wide text-sky-300">{HINT_LEVELS[i] ?? 'Dica'}</strong>{h}</span></li>
                 ))}
               </ol>
-              <button onClick={askHint} disabled={shownHints.length >= 3}
+              <button onClick={askHint} disabled={shownHints.length >= lab.hintCount}
                 className={`mt-3 inline-flex min-h-9 items-center rounded-md border border-[var(--color-line)] px-3 text-sm text-slate-200 hover:bg-[var(--color-surface-2)] disabled:opacity-40 ${FOCUS}`}>
-                {shownHints.length >= 3 ? 'Sem mais dicas' : `Pedir dica ${shownHints.length + 1} de 3`}
+                {shownHints.length >= lab.hintCount ? 'Sem mais dicas' : `Pedir dica ${shownHints.length + 1} de ${lab.hintCount}`}
               </button>
             </Panel>
 

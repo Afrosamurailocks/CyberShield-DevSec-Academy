@@ -15,7 +15,7 @@ export default defineConfig(() => {
       // Proxy das chamadas de API para o backend Express (labs OWASP) em :4000.
       proxy: {
         '/api': {
-          target: 'http://localhost:4000',
+          target: `http://localhost:${process.env.API_PORT ?? 4000}`,
           changeOrigin: true,
         },
       },

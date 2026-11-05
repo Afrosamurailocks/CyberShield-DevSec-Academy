@@ -44,15 +44,32 @@ test('sem registro suficiente, não emite selo (nem com nome válido)', () => {
   assert.equal(l.issue(lid, 'Maria Exemplo').ok, false);
 });
 
-test('a trilha mais atrasada impede o selo', () => {
+test('a trilha mais atrasada impede o selo; o Laboratório de prompts (avaliação final LLM) é obrigatório por inteiro', () => {
   const l = mk(); const lid = uid();
   fill(l, lid, 10, 'llmlab');
   assert.equal(l.issue(lid, 'Maria Exemplo').ok, false);
-  for (let i = 0; i < 6; i++) l.recordPromptLab(lid, `pl${i}`);
-  assert.equal(l.issue(lid, 'Maria Exemplo').ok, false, '60% no lab ainda não chega a 70%');
-  l.recordPromptLab(lid, 'pl6');
+  for (let i = 0; i < 9; i++) l.recordPromptLab(lid, `pl${i}`);
+  const r9 = l.issue(lid, 'Maria Exemplo');
+  assert.equal(r9.ok, false, '9/10 flags: avaliação final incompleta, sem nível (nem Bronze)');
+  assert.match(!r9.ok ? r9.error : '', /avaliações finais/);
+  l.recordPromptLab(lid, 'pl9');
   const r = l.issue(lid, 'Maria Exemplo');
-  assert.ok(r.ok && r.seal.tier === 'bronze');
+  assert.ok(r.ok && r.seal.tier === 'ouro');
+});
+
+test('avaliação final obrigatória de cada trilha de conteúdo (LGPD, CIS, ISO)', () => {
+  const finals = { privacy: ['f1', 'f2'], cis: ['f1', 'f2'], iso: ['f1', 'f2'] };
+  const l = mk(mkDir(), { finals: () => finals }); const lid = uid();
+  fill(l, lid, 10); // s0..s9: nenhuma é "f1/f2": avaliações finais pendentes
+  const r = l.issue(lid, 'Maria Exemplo');
+  assert.equal(r.ok, false, '100% nos cenários comuns não basta sem as avaliações finais');
+  assert.match(!r.ok ? r.error : '', /privacy.*cis.*iso/);
+  const mine = l.me(lid).tracks.find((t) => t.id === 'cis');
+  assert.deepEqual(mine?.final, { done: 0, total: 2 });
+  for (const t of ['privacy', 'cis'] as const) { l.recordScenario(lid, t, 'f1'); l.recordScenario(lid, t, 'f2'); }
+  assert.equal(l.issue(lid, 'Maria Exemplo').ok, false, 'ainda falta a final da ISO');
+  l.recordScenario(lid, 'iso', 'f1'); l.recordScenario(lid, 'iso', 'f2');
+  assert.equal(l.issue(lid, 'Maria Exemplo').ok, true);
 });
 
 test('emite, verifica por ID e valida o formato do ID', () => {
@@ -72,7 +89,7 @@ test('emite, verifica por ID e valida o formato do ID', () => {
 
 test('selo é estável por nível e muda ao subir de nível', () => {
   const l = mk(); const lid = uid();
-  fill(l, lid, 9, 'llmlab'); for (let i = 0; i < 9; i++) l.recordPromptLab(lid, `pl${i}`);
+  fill(l, lid, 9, 'llmlab'); for (let i = 0; i < 10; i++) l.recordPromptLab(lid, `pl${i}`); // lab (avaliação final) completo; as demais em 90%
   const a = l.issue(lid, 'Maria Exemplo'); assert.ok(a.ok && a.seal.tier === 'prata');
   const a2 = l.issue(lid, 'Maria Exemplo'); assert.ok(a2.ok && a.ok && a2.seal.id === a.seal.id && a2.seal.issuedAt === a.seal.issuedAt);
   fill(l, lid, 10);

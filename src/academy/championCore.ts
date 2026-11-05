@@ -11,14 +11,24 @@ export const TIERS: Tier[] = [
 ];
 
 /** Contagem mínima por trilha (é tudo que o servidor precisa saber). */
-export interface TrackCount { id: string; done: number; total: number }
+export interface TrackCount {
+  id: string; done: number; total: number;
+  /** Avaliação final da trilha, quando houver: é OBRIGATÓRIA. Sem concluí-la, nenhum nível é liberado. */
+  final?: { done: number; total: number };
+}
+
+/** A avaliação final da trilha existe e ainda não foi concluída. */
+export const finalPending = (t: { final?: { done: number; total: number } }): boolean =>
+  Boolean(t.final && t.final.total > 0 && t.final.done < t.final.total);
 
 export const pct = (done: number, total: number): number =>
   total > 0 ? Math.min(100, Math.floor((Math.max(0, done) / total) * 100)) : 0;
 
-export interface MissingItem { id: string; units: number }
+export interface MissingItem { id: string; units: number; /** O que falta inclui a avaliação final (obrigatória). */ final?: boolean }
 export interface ChampionStatus<T extends TrackCount = TrackCount> {
-  tracks: (T & { pct: number })[];
+  tracks: (T & { pct: number; finalPending: boolean })[];
+  /** Trilhas cuja avaliação final obrigatória ainda não foi concluída. */
+  pendingFinals: string[];
   /** Média simples dos percentuais das trilhas. */
   overall: number;
   /** Menor percentual entre as trilhas (o gargalo define o nível). */
@@ -28,21 +38,27 @@ export interface ChampionStatus<T extends TrackCount = TrackCount> {
 }
 
 export function evaluate<T extends TrackCount>(inputs: T[]): ChampionStatus<T> {
-  const tracks = inputs.map((t) => ({ ...t, pct: pct(t.done, t.total) }));
+  const tracks = inputs.map((t) => ({ ...t, pct: pct(t.done, t.total), finalPending: finalPending(t) }));
+  const pendingFinals = tracks.filter((t) => t.finalPending).map((t) => t.id);
   const floor = tracks.length ? Math.min(...tracks.map((t) => t.pct)) : 0;
   const overall = tracks.length ? Math.round(tracks.reduce((s, t) => s + t.pct, 0) / tracks.length) : 0;
   const valid = tracks.length > 0 && tracks.every((t) => t.total > 0);
-  const reached = valid ? [...TIERS].reverse().find((t) => floor >= t.min) ?? null : null;
+  // Avaliações finais são obrigatórias: com qualquer uma pendente, não há nível (nem Bronze), mesmo com % alto.
+  const reached = valid && pendingFinals.length === 0 ? [...TIERS].reverse().find((t) => floor >= t.min) ?? null : null;
   const nextTier = TIERS.find((t) => !reached || t.min > reached.min) ?? null;
   const next = nextTier
     ? {
       tier: nextTier,
       missing: tracks
-        .map((t) => ({ id: t.id, units: Math.max(0, Math.ceil((nextTier.min / 100) * t.total) - t.done) }))
+        .map((t): MissingItem => {
+          const byPct = Math.max(0, Math.ceil((nextTier.min / 100) * t.total) - t.done);
+          if (!t.finalPending || !t.final) return { id: t.id, units: byPct };
+          return { id: t.id, units: Math.max(byPct, t.final.total - t.final.done), final: true };
+        })
         .filter((m) => m.units > 0),
     }
     : null;
-  return { tracks, overall, floor, tier: reached, next };
+  return { tracks, pendingFinals, overall, floor, tier: reached, next };
 }
 
 /** Nome exibido: sem caracteres de controle e sem < >, espaços colapsados, até 60 caracteres. */

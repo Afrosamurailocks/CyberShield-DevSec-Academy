@@ -35,7 +35,15 @@ const toPublic = (s: SealRec): PublicSeal => ({ id: s.id, name: s.name, tier: s.
 const B32 = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
 const base32 = (buf: Buffer, len: number) => { let out = ''; for (const b of buf) out += B32[b % 32]; return out.slice(0, len); };
 
-export interface LedgerOpts { dir: string; key?: Buffer; totals: () => Totals; maxLearners?: number }
+export interface LedgerOpts {
+  dir: string; key?: Buffer; totals: () => Totals; maxLearners?: number;
+  /**
+   * Avaliação final OBRIGATÓRIA por trilha de conteúdo: ids dos cenários da avaliação final (sem o prefixo `trilha:`).
+   * A trilha `llmlab` (Laboratório de prompts) é, por definição, a avaliação final da trilha LLM e exige 100%.
+   * Sem concluir todas as avaliações finais, o selo não é emitido em nenhum nível.
+   */
+  finals?: () => Partial<Record<TrailId, string[]>>;
+}
 
 export function createLedger(opts: LedgerOpts) {
   const file = path.join(opts.dir, 'champion-ledger.json');
@@ -95,7 +103,14 @@ export function createLedger(opts: LedgerOpts) {
         else if (id === 'llmlab') done = n(l.promptLabs);
         else done = n(l.scenarios, `${id}:`);
       }
-      return { id, done: Math.min(done, t[id]), total: t[id] };
+      const base: TrackCount = { id, done: Math.min(done, t[id]), total: t[id] };
+      if (id === 'llmlab') return { ...base, final: { done: base.done, total: base.total } };
+      const ids = id === 'owasp' ? undefined : opts.finals?.()[id as TrailId];
+      if (ids && ids.length) {
+        const got = l ? ids.filter((sid) => l.scenarios[`${id}:${sid}`]).length : 0;
+        return { ...base, final: { done: got, total: ids.length } };
+      }
+      return base;
     });
   };
 
@@ -122,12 +137,28 @@ export function createLedger(opts: LedgerOpts) {
       const l = learner(lid, false);
       return { tracks: counts(l), seal: l?.seal ? toPublic(l.seal) : null };
     },
+    /** Há registro para esta chave? (usado para vincular o progresso anônimo a uma conta). */
+    has(lid: string): boolean { return Boolean(db.learners[lid]); },
+    /** Registro de progresso com datas de conclusão (base do relatório e da hidratação do navegador). Somente leitura. */
+    detail(lid: string) {
+      const l = learner(lid, false);
+      return {
+        scenarios: { ...(l?.scenarios ?? {}) }, labs: { ...(l?.labs ?? {}) }, promptLabs: { ...(l?.promptLabs ?? {}) },
+        createdAt: l?.createdAt ?? null,
+      };
+    },
+    /** Contagens por trilha + avaliação (mesma regra do selo) para uma chave, sem criar registro. */
+    status(lid: string) { return evaluate(counts(learner(lid, false))); },
     issue(lid: string, rawName: unknown): { ok: true; seal: PublicSeal } | { ok: false; error: string } {
       const name = typeof rawName === 'string' ? cleanName(rawName) : '';
       if (name.length < 2) return { ok: false, error: 'nome inválido (mínimo de 2 caracteres)' };
       const l = learner(lid, false);
       const status = evaluate(counts(l));
-      if (!l || !status.tier) return { ok: false, error: 'trilhas incompletas para o nível mínimo' };
+      if (!l || !status.tier) {
+        return { ok: false, error: status.pendingFinals.length
+          ? `conclua as avaliações finais obrigatórias: ${status.pendingFinals.join(', ')}`
+          : 'trilhas incompletas para o nível mínimo' };
+      }
       const prev = l.seal;
       const id = idOf(lid, status.tier.id);
       const issuedAt = prev && prev.id === id ? prev.issuedAt : new Date().toISOString();
@@ -161,6 +192,8 @@ export function createLedger(opts: LedgerOpts) {
       if (l.seal) sealIndex.delete(l.seal.id);
       delete db.learners[lid]; flush(); return true;
     },
+    /** Chave de assinatura derivada por finalidade (selos, relatórios e trilha de auditoria não compartilham o mesmo uso da chave). */
+    derive(purpose: string): Buffer { return hmac(`derive|${purpose}`); },
     flush,
     tiers: TIERS,
   };

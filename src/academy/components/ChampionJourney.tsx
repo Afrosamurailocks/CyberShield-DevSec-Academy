@@ -43,7 +43,7 @@ export function ChampionJourney({ onNavigate }: Readonly<{ onNavigate: (area: Ap
 
   const tracks: TrackInput[] = useMemo(() => TRACK_META.map((m) => {
     const c = me?.tracks.find((t) => t.id === m.id);
-    return { ...m, done: c?.done ?? 0, total: c?.total ?? 0 };
+    return { ...m, done: c?.done ?? 0, total: c?.total ?? 0, final: c?.final };
   }), [me]);
   const status = useMemo(() => evaluate(tracks), [tracks]);
   const seal = me?.seal ?? null;
@@ -90,10 +90,10 @@ export function ChampionJourney({ onNavigate }: Readonly<{ onNavigate: (area: Ap
     setTimeout(() => window.print(), 50);
   };
 
-  const removeSeal = async () => { try { await removeChampionSeal(); setMe((m) => (m ? { ...m, seal: null } : m)); setMsg(null); } catch { setMsg('Não foi possível remover agora.'); } };
+  const removeSeal = async () => { try { await removeChampionSeal(); setMe((m) => (m ? { ...m, seal: null } : m)); setVerified(null); setMsg(null); } catch { setMsg('Não foi possível remover agora.'); } };
   const eraseAll = async () => {
     if (!window.confirm('Apagar do servidor todo o seu progresso e o seu selo? Esta ação não pode ser desfeita.')) return;
-    try { await eraseChampionData(); setName(''); refresh(); setMsg(null); } catch { setMsg('Não foi possível apagar agora.'); }
+    try { await eraseChampionData(); setName(''); setVerified(null); refresh(); setMsg(null); } catch { setMsg('Não foi possível apagar agora.'); }
   };
 
   const verify = useCallback(async (id: string) => {
@@ -144,6 +144,13 @@ export function ChampionJourney({ onNavigate }: Readonly<{ onNavigate: (area: Ap
                         </div>
                         <span className="shrink-0 font-mono text-xs text-slate-400">{t.done}/{t.total} {t.unit} · {t.pct}%</span>
                       </div>
+                      {t.final && (
+                        <p className={`mt-2 flex items-center gap-1.5 text-xs ${t.finalPending ? 'text-amber-300' : 'text-[var(--color-defense)]'}`}>
+                          {t.finalPending
+                            ? <>Avaliação final obrigatória pendente: {t.final.done}/{t.final.total} {t.id === 'llmlab' ? 'flags' : 'cenários'}</>
+                            : <>Avaliação final concluída</>}
+                        </p>
+                      )}
                     </div>
                     <button onClick={() => onNavigate(t.area, { lab: t.id === 'llmlab' })}
                       className={`${BTN} border border-[var(--color-line)] text-slate-100 hover:bg-[var(--color-surface-2)] sm:justify-self-end`}>
@@ -171,7 +178,7 @@ export function ChampionJourney({ onNavigate }: Readonly<{ onNavigate: (area: Ap
                   ))}
                 </tbody>
               </table>
-              <p className="border-t border-[var(--color-line)] px-4 py-2.5 text-xs leading-relaxed text-slate-500">O nível é o da trilha mais atrasada. Unidade de conclusão: cenário respondido corretamente, lab web resolvido ou flag capturada, sempre validados pelo servidor. Limites são premissa editorial [a validar com a AI Guild].</p>
+              <p className="border-t border-[var(--color-line)] px-4 py-2.5 text-xs leading-relaxed text-slate-500">As avaliações finais são obrigatórias: sem concluir a de cada trilha (e o Laboratório de prompts, na trilha LLM) o selo não é liberado, mesmo com o percentual mínimo. O nível é o da trilha mais atrasada. Unidade de conclusão: cenário respondido corretamente, lab web resolvido ou flag capturada, sempre validados pelo servidor. Limites são premissa editorial [a validar com a AI Guild].</p>
             </div>
           </section>
 
@@ -213,7 +220,7 @@ export function ChampionJourney({ onNavigate }: Readonly<{ onNavigate: (area: Ap
                 <ul className="mt-2 space-y-1 text-slate-400">
                   {status.next.missing.map((m) => {
                     const t = tracks.find((x) => x.id === m.id);
-                    return <li key={m.id} className="flex justify-between gap-3"><span>{t?.short ?? m.id}</span><span className="font-mono text-xs text-slate-300">{m.units} {t?.unit}</span></li>;
+                    return <li key={m.id} className="flex justify-between gap-3"><span>{t?.short ?? m.id}{m.final ? ' · avaliação final' : ''}</span><span className="font-mono text-xs text-slate-300">{m.units} {t?.unit}</span></li>;
                   })}
                 </ul>
               </div>

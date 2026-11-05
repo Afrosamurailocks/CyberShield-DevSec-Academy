@@ -79,7 +79,7 @@ export const TRAILS: Record<TrailKind, TrailConfig> = {
     kind: 'llm',
     tab: 'LLM',
     title: 'Segurança de aplicações com LLM',
-    intro: 'OWASP Top 10 for LLM Applications 2025 em 10 módulos, mais uma avaliação final. Cada módulo traz um incidente real documentado, cenários em que você reconhece o ataque (inclusive multi-turn) e decide a mitigação, e as defesas que de fato resolvem.',
+    intro: 'OWASP Top 10 for LLM Applications 2025 em 10 módulos e, como avaliação final, o Laboratório de prompts: você ataca assistentes vulneráveis e captura uma flag por categoria. Cada módulo traz um incidente real documentado, cenários em que você reconhece o ataque (inclusive multi-turn) e decide a mitigação, e as defesas que de fato resolvem.',
     codePrefix: 'L',
     unit: 'módulo', unitPlural: 'módulos',
     bar: 'bg-fuchsia-500',

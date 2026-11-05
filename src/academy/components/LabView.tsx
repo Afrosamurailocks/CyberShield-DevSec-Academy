@@ -28,8 +28,8 @@ function Fact({ label, children }: { label: string; children: React.ReactNode })
   );
 }
 
-export function LabView({ lab, solved, onBack, onSolved }: {
-  lab: Lab; solved: boolean; onBack: () => void; onSolved: (flag: string, points: number) => void;
+export function LabView({ lab, solved, totalSteps, onBack, onSolved }: {
+  lab: Lab; solved: boolean; /** Total de passos da kill chain (nº de labs). */ totalSteps: number; onBack: () => void; onSolved: (flag: string, points: number) => void;
 }) {
   const [tab, setTab] = useState<Tab>('missao');
   const [revealed, setRevealed] = useState(0);
@@ -91,7 +91,7 @@ export function LabView({ lab, solved, onBack, onSolved }: {
           <Fact label="Nível"><Pill className={DIFFICULTY_COLOR[lab.difficulty]}>{lab.difficulty}</Pill></Fact>
           <Fact label="Fraqueza">{lab.cwe}</Fact>
           <Fact label="Pontos">{lab.points}</Fact>
-          <Fact label="Kill chain">{lab.killChain ? `passo ${lab.killChain.step}/10` : '—'}</Fact>
+          <Fact label="Kill chain">{lab.killChain ? `passo ${lab.killChain.step}/${totalSteps}` : '—'}</Fact>
         </dl>
 
         {lab.killChain && (lab.killChain.uses || lab.killChain.provides) && (

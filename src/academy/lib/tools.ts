@@ -49,7 +49,7 @@ export function jwtForgeNone(payloadJson: string): string {
   return `${header}.${b64urlEncode(payload)}.`;
 }
 
-/** Assina um JWT HS256 com um segredo (ex.: o JWT_SECRET vazado no A05). */
+/** Assina um JWT HS256 com um segredo (ex.: o JWT_SECRET vazado no A02). */
 export async function jwtSignHS256(payloadJson: string, secret: string): Promise<string> {
   const payload = JSON.stringify(JSON.parse(payloadJson));
   const header = b64urlEncode(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));

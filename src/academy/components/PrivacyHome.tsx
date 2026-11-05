@@ -19,7 +19,7 @@ export function PrivacyNotice({ config }: Readonly<{ config: TrailConfig }>) {
 const pad = (n: number) => String(n).padStart(2, '0');
 
 /** Visão geral da trilha de Privacidade e LGPD: lista densa, uma linha por módulo. */
-export function PrivacyHome({ config, modules, progress, doneModuleIds, onOpen, onOpenLab }: Readonly<{
+export function PrivacyHome({ config, modules, progress, doneModuleIds, onOpen, onOpenLab, finalLab }: Readonly<{
   config: TrailConfig;
   modules: PrivacyModule[];
   progress: PrivacyProgress;
@@ -27,12 +27,17 @@ export function PrivacyHome({ config, modules, progress, doneModuleIds, onOpen, 
   onOpen: (m: PrivacyModule) => void;
   /** Abre o laboratório prático da trilha (só LLM). */
   onOpenLab?: () => void;
+  /** Avaliação final da trilha (LLM): flags capturadas no Laboratório de prompts. */
+  finalLab?: { solved: number; total: number };
 }>) {
   const totalScenarios = modules.reduce((s, m) => s + m.scenarios.length, 0);
   const doneScenarios = Object.keys(progress.done).filter((id) => modules.some((m) => m.scenarios.some((s) => s.id === id))).length;
   const next = modules.find((m) => !doneModuleIds.has(m.id));
   const started = doneScenarios > 0;
   const minutes = modules.reduce((s, m) => s + m.minutes, 0);
+  // avaliação final é obrigatória: LLM = Laboratório de prompts; demais trilhas = módulo "Avaliação final…"
+  const finalMod = modules.find((m) => /^Avaliação final/i.test(m.title));
+  const finalPending = finalLab?.total ? finalLab.solved < finalLab.total : Boolean(finalMod && !doneModuleIds.has(finalMod.id));
 
   return (
     <div className="space-y-8">
@@ -53,25 +58,17 @@ export function PrivacyHome({ config, modules, progress, doneModuleIds, onOpen, 
 
       <PrivacyNotice config={config} />
 
-      {onOpenLab && (
-        <div className="flex flex-col gap-3 rounded-md border border-fuchsia-400/30 bg-[var(--color-surface)] px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="max-w-2xl">
-            <h3 className="font-display text-base font-semibold text-slate-100">Laboratório de prompts</h3>
-            <p className="mt-1 text-sm leading-relaxed text-slate-400">Pratique na mão: converse com 10 assistentes propositalmente vulneráveis (um por categoria OWASP LLM), capture a flag de cada um e veja a correção.</p>
-          </div>
-          <button onClick={onOpenLab}
-            className="inline-flex min-h-10 shrink-0 items-center gap-2 rounded-md border border-fuchsia-400/40 px-4 text-sm font-semibold text-fuchsia-200 transition-colors hover:bg-fuchsia-400/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fuchsia-300">
-            Abrir o laboratório <ArrowRight size={15} aria-hidden="true" />
-          </button>
-        </div>
-      )}
-
-      <dl className="grid divide-y divide-[var(--color-line)] overflow-hidden rounded-md border border-[var(--color-line)] bg-[var(--color-surface)] sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+      <dl className={`grid divide-y divide-[var(--color-line)] overflow-hidden rounded-md border border-[var(--color-line)] bg-[var(--color-surface)] sm:divide-x sm:divide-y-0 ${finalLab?.total ? 'sm:grid-cols-4' : 'sm:grid-cols-3'}`}>
         <Metric label={`${config.unitPlural.charAt(0).toUpperCase()}${config.unitPlural.slice(1)} concluídos`} value={`${doneModuleIds.size}/${modules.length}`}
-          detail={`${modules.length ? Math.round((doneModuleIds.size / modules.length) * 100) : 0}% da trilha`}
+          detail={finalPending ? 'avaliação final pendente' : `${modules.length ? Math.round((doneModuleIds.size / modules.length) * 100) : 0}% da trilha`}
           progress={modules.length ? doneModuleIds.size / modules.length : 0} />
         <Metric label="Cenários resolvidos" value={`${doneScenarios}/${totalScenarios}`}
           detail="decisões corretas" progress={totalScenarios ? doneScenarios / totalScenarios : 0} />
+        {finalLab?.total ? (
+          <Metric label="Avaliação final" value={`${finalLab.solved}/${finalLab.total}`}
+            detail={finalLab.solved >= finalLab.total ? 'flags capturadas no laboratório' : 'flags no Laboratório de prompts'}
+            progress={finalLab.total ? finalLab.solved / finalLab.total : 0} />
+        ) : null}
         <Metric label="Duração estimada" value={`${minutes} min`} detail="estimativa editorial, a validar no piloto" />
       </dl>
 
@@ -109,6 +106,33 @@ export function PrivacyHome({ config, modules, progress, doneModuleIds, onOpen, 
                 </li>
               );
             })}
+            {onOpenLab && (() => {
+              const total = finalLab?.total ?? 0, got = finalLab?.solved ?? 0;
+              const finished = total > 0 && got >= total;
+              return (
+                <li key="final-lab">
+                  <button onClick={onOpenLab}
+                    className="group grid w-full grid-cols-[48px_minmax(0,1fr)_auto] items-center gap-x-4 gap-y-1 px-4 py-3 text-left transition-colors hover:bg-[var(--color-surface-2)] md:grid-cols-[56px_minmax(0,1.5fr)_minmax(0,2fr)_84px_96px_24px]">
+                    <span className="flex items-center gap-2">
+                      <span className={`h-4 w-0.5 rounded-full ${config.bar}`} aria-hidden="true" />
+                      <span className="font-mono text-xs font-medium text-slate-300">LF</span>
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block truncate text-sm font-medium text-slate-100">Avaliação final: Laboratório de prompts</span>
+                      <span className="mt-0.5 block truncate text-xs text-slate-500 md:hidden">{total ? `${got}/${total} flags` : 'laboratório'}</span>
+                    </span>
+                    <span className="hidden truncate text-[13px] text-slate-400 md:block">Ataque 10 assistentes propositalmente vulneráveis (um por categoria OWASP LLM) e capture a flag de cada um.</span>
+                    <span className="hidden font-mono text-xs text-slate-400 md:block">{total ? `${total} flags` : 'prático'}</span>
+                    <span className="flex items-center gap-1.5 text-[13px] text-slate-300">
+                      {finished
+                        ? <><CheckCircle2 size={14} className="text-[var(--color-defense)]" aria-hidden="true" /> Concluído</>
+                        : <><Circle size={12} className="text-slate-600" aria-hidden="true" /> {got > 0 ? `${got}/${total}` : 'Pendente'}</>}
+                    </span>
+                    <ChevronRight size={14} className="hidden text-slate-600 transition-colors group-hover:text-slate-300 md:block" aria-hidden="true" />
+                  </button>
+                </li>
+              );
+            })()}
           </ul>
         </div>
       </section>

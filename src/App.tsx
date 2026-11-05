@@ -1,7 +1,7 @@
-import React, { useMemo, useState, useCallback } from 'react';
-import { Loader2, AlertTriangle, Menu, X } from 'lucide-react';
+import React, { useMemo, useState, useCallback, useEffect } from 'react';
+import { Loader2, AlertTriangle, Menu, X, BarChart3, Users, ScrollText } from 'lucide-react';
 import type { Lab, PrivacyModule, AppArea } from './academy/types';
-import { useLabs, useProgress, useTrail } from './academy/hooks';
+import { useLabs, useProgress, useTrail, useFinalLab } from './academy/hooks';
 import { TRAILS } from './academy/trails';
 import { Sidebar } from './academy/components/Sidebar';
 import { Dashboard } from './academy/components/Dashboard';
@@ -11,6 +11,12 @@ import { PrivacyModuleView } from './academy/components/PrivacyModuleView';
 import { LlmLab } from './academy/components/LlmLab';
 import { ChampionJourney } from './academy/components/ChampionJourney';
 import { ErrorBoundary } from './academy/components/ErrorBoundary';
+import { useSession, ChangePasswordPanel } from './academy/components/AuthGate';
+import { ReportView } from './academy/components/ReportView';
+import { UsersAdmin } from './academy/components/UsersAdmin';
+import { AuditView } from './academy/components/AuditView';
+
+type ConsoleView = 'report' | 'users' | 'audit' | 'account';
 
 const LAB_ID = '__lab';
 
@@ -21,11 +27,21 @@ export default function App() {
   const cisTrail = useTrail('cis');
   const isoTrail = useTrail('iso');
   const llmTrail = useTrail('llm');
+  const finalLab = useFinalLab(true);
   const [area, setArea] = useState<AppArea>('seguranca');
   const [activeId, setActiveId] = useState<string | null>(null);
   const [activeModuleId, setActiveModuleId] = useState<string | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  useEffect(() => { // acessibilidade: Escape fecha o menu mobile
+    if (!drawerOpen) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setDrawerOpen(false); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [drawerOpen]);
   const [champion, setChampion] = useState(() => new URLSearchParams(window.location.search).has('verificar'));
+  const { user, signOut } = useSession();
+  const [consoleView, setConsoleView] = useState<ConsoleView | null>(null);
+  const openConsole = useCallback((v: ConsoleView) => { setChampion(false); setConsoleView(v); setDrawerOpen(false); window.scrollTo({ top: 0 }); }, []);
 
   const solvedIds = useMemo(() => new Set(Object.keys(progress.solved)), [progress]);
   const totalPoints = useMemo(() => Object.values(progress.solved).reduce((s, v) => s + v.points, 0), [progress]);
@@ -33,19 +49,19 @@ export default function App() {
   const active = useMemo(() => labs.find((l) => l.id === activeId) ?? null, [labs, activeId]);
 
   const select = useCallback((lab: Lab | null) => {
-    setChampion(false);
+    setChampion(false); setConsoleView(null);
     setActiveId(lab?.id ?? null);
     setDrawerOpen(false);
     window.scrollTo({ top: 0 });
   }, []);
 
   const selectModule = useCallback((m: PrivacyModule | null) => {
-    setChampion(false);
+    setChampion(false); setConsoleView(null);
     setActiveModuleId(m?.id ?? null);
     setDrawerOpen(false);
     window.scrollTo({ top: 0 });
   }, []);
-  const openLab = useCallback(() => { setChampion(false); setActiveModuleId(LAB_ID); setDrawerOpen(false); window.scrollTo({ top: 0 }); }, []);
+  const openLab = useCallback(() => { setChampion(false); setConsoleView(null); setActiveModuleId(LAB_ID); setDrawerOpen(false); window.scrollTo({ top: 0 }); }, []);
   const isPrivacy = area !== 'seguranca';
   const trailKind = area === 'cis' ? 'cis' : area === 'iso' ? 'iso' : area === 'llm' ? 'llm' : 'privacy';
   const trail = { cis: cisTrail, iso: isoTrail, llm: llmTrail, privacy: privacyTrail }[trailKind];
@@ -55,7 +71,7 @@ export default function App() {
   const activeModule = useMemo(() => trail.modules.find((m) => m.id === activeModuleId) ?? null, [trail.modules, activeModuleId]);
 
   const goArea = useCallback((a: AppArea, opts?: { lab?: boolean }) => {
-    setChampion(false); setArea(a); setActiveId(null);
+    setChampion(false); setConsoleView(null); setArea(a); setActiveId(null);
     setActiveModuleId(opts?.lab ? LAB_ID : null);
     setDrawerOpen(false); window.scrollTo({ top: 0 });
   }, []);
@@ -68,9 +84,9 @@ export default function App() {
     <Sidebar
       area={area}
       onArea={(a) => goArea(a)}
-      champion={{ active: champion, onOpen: () => { setChampion(true); setDrawerOpen(false); window.scrollTo({ top: 0 }); } }}
+      champion={{ active: champion && !consoleView, onOpen: () => { setConsoleView(null); setChampion(true); setDrawerOpen(false); window.scrollTo({ top: 0 }); } }}
       privacy={{ config: trailConfig, modules: trail.modules, doneIds: trail.doneModuleIds, activeId: activeModuleId, onSelect: selectModule,
-        lab: area === 'llm' ? { label: 'Laboratório de prompts', active: activeModuleId === LAB_ID, onOpen: openLab } : undefined }}
+        lab: area === 'llm' ? { code: 'LF', label: 'Avaliação final: Laboratório de prompts', caption: finalLab.total ? `${finalLab.solved}/${finalLab.total} flags` : 'laboratório', solved: finalLab.solved, total: finalLab.total, active: activeModuleId === LAB_ID, onOpen: openLab } : undefined }}
       labs={labs}
       solvedIds={solvedIds}
       activeId={activeId}
@@ -78,6 +94,14 @@ export default function App() {
       maxPoints={maxPoints}
       onSelect={select}
       onNavigate={() => setDrawerOpen(false)}
+      account={user ? {
+        name: user.name, roleLabel: user.roleLabel, accountActive: consoleView === 'account', onAccount: () => openConsole('account'), onLogout: () => { void signOut(); },
+        items: [
+          { id: 'report', label: user.role === 'learner' ? 'Meu desempenho' : user.role === 'manager' ? 'Desempenho da equipe' : 'Relatório de desempenho', icon: <BarChart3 size={15} aria-hidden="true" />, active: consoleView === 'report', onOpen: () => openConsole('report') },
+          ...(user.role === 'admin' || user.role === 'auditor' ? [{ id: 'users', label: user.role === 'admin' ? 'Usuários e perfis' : 'Usuários (leitura)', icon: <Users size={15} aria-hidden="true" />, active: consoleView === 'users', onOpen: () => openConsole('users') }] : []),
+          ...(user.role === 'admin' || user.role === 'auditor' ? [{ id: 'audit', label: 'Trilha de auditoria', icon: <ScrollText size={15} aria-hidden="true" />, active: consoleView === 'audit', onOpen: () => openConsole('audit') }] : []),
+        ],
+      } : undefined}
     />
   );
 
@@ -119,7 +143,7 @@ export default function App() {
 
           <main id="conteudo" className="flex-1 px-4 py-6 sm:px-6 lg:px-8">
             {/* aviso de ambiente */}
-            {!isPrivacy && !champion && (
+            {!isPrivacy && !champion && !consoleView && (
             <div className="mb-5 flex items-center gap-2 border-l-2 border-amber-400/70 bg-[var(--color-surface)] px-3 py-1.5 text-xs text-slate-400">
               <AlertTriangle size={13} className="shrink-0 text-amber-400" aria-hidden="true" />
               <span>Backend <strong className="font-semibold text-slate-200">propositalmente vulnerável</strong>. Ambiente de treino: use apenas localmente.</span>
@@ -138,7 +162,16 @@ export default function App() {
               </div>
             )}
 
-            {!pageLoading && !pageError && (
+            {consoleView && (
+              <ErrorBoundary>
+                {consoleView === 'report' && <ReportView />}
+                {consoleView === 'users' && <UsersAdmin />}
+                {consoleView === 'audit' && <AuditView />}
+                {consoleView === 'account' && <ChangePasswordPanel onClose={() => setConsoleView(null)} />}
+              </ErrorBoundary>
+            )}
+
+            {!consoleView && !pageLoading && !pageError && (
               <ErrorBoundary>
                 {champion ? (
                   <ChampionJourney onNavigate={goArea} />
@@ -155,13 +188,14 @@ export default function App() {
                       onBack={() => selectModule(null)}
                     />
                   ) : (
-                    <PrivacyHome config={trailConfig} modules={trail.modules} progress={trail.progress} doneModuleIds={trail.doneModuleIds} onOpen={selectModule} onOpenLab={area === 'llm' ? openLab : undefined} />
+                    <PrivacyHome config={trailConfig} modules={trail.modules} progress={trail.progress} doneModuleIds={trail.doneModuleIds} onOpen={selectModule} onOpenLab={area === 'llm' ? openLab : undefined} finalLab={area === 'llm' ? finalLab : undefined} />
                   )
                 ) : active ? (
                   <LabView
                     key={active.id}
                     lab={active}
                     solved={solvedIds.has(active.id)}
+                    totalSteps={labs.length}
                     onBack={() => select(null)}
                     onSolved={handleSolved}
                   />

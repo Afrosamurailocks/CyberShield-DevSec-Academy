@@ -142,12 +142,14 @@ export function saveTrailProgress(kind: TrailKind, p: PrivacyProgress): void {
 export interface PromptLabInfo {
   id: string; order: number; owasp: string; category: string; title: string; persona: string;
   greeting: string; objective: string; brief: string;
+  /** Quantidade de dicas do lab (vem do servidor). */
+  hintCount: number;
   evidence?: { title: string; lines: string[]; note?: string };
 }
 export interface PromptLabProgress { solved: Record<string, { at: string; hints: number }> }
 
 async function postJson<T>(path: string, body: unknown): Promise<T> {
-  const r = await fetch(path, { method: 'POST', headers: { 'content-type': 'application/json', ...learnerHeaders() }, body: JSON.stringify(body) });
+  const r = await fetch(path, { method: 'POST', headers: { 'content-type': 'application/json', 'x-requested-with': 'cybershield', ...learnerHeaders() }, body: JSON.stringify(body) });
   if (!r.ok) {
     const e = await r.json().catch(() => ({}));
     throw new Error((e as { error?: string }).error ?? 'request failed');
@@ -179,10 +181,13 @@ export function loadPromptLabProgress(): PromptLabProgress {
 }
 export function savePromptLabProgress(p: PromptLabProgress): void {
   try { localStorage.setItem(LAB_KEY, JSON.stringify(p)); } catch { /* ignore */ }
+  try { window.dispatchEvent(new Event(LAB_EVENT)); } catch { /* ignore */ }
 }
+/** Disparado quando o progresso do Laboratório de prompts muda (para refletir na visão geral da trilha LLM). */
+export const LAB_EVENT = 'cybershield:llmlab-progress';
 
 // ───────── Jornada Security Champion (progresso e selo no servidor) ─────────
-export interface ChampionMe { tracks: { id: string; done: number; total: number }[]; seal: PublicSeal | null }
+export interface ChampionMe { tracks: { id: string; done: number; total: number; final?: { done: number; total: number } }[]; seal: PublicSeal | null }
 export async function fetchChampionMe(): Promise<ChampionMe> {
   const r = await fetch('/api/champion/me', { headers: learnerHeaders() });
   if (!r.ok) throw new Error('champion unavailable');
@@ -195,7 +200,7 @@ export async function verifyChampionSeal(id: string): Promise<PublicSeal | null>
   return (await r.json()).seal as PublicSeal;
 }
 async function del(path: string): Promise<void> {
-  const r = await fetch(path, { method: 'DELETE', headers: learnerHeaders() });
+  const r = await fetch(path, { method: 'DELETE', headers: { 'x-requested-with': 'cybershield', ...learnerHeaders() } });
   if (!r.ok) throw new Error('request failed');
 }
 export const removeChampionSeal = () => del('/api/champion/seal');

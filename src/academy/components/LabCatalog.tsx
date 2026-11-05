@@ -29,7 +29,7 @@ export function LabCatalog({ labs, solvedIds, onOpen }: {
       <div className="mb-3 flex flex-wrap items-end justify-between gap-3">
         <div>
           <h3 id="catalog-title" className="text-lg font-semibold">Laboratórios</h3>
-          <p className="text-xs text-slate-500">Uma falha real por categoria OWASP, na ordem em que a intrusão acontece.</p>
+          <p className="text-xs text-slate-500">Falhas reais das categorias OWASP Top 10:2025 (SSRF faz parte do A01), na ordem em que a intrusão acontece.</p>
         </div>
         <div role="group" aria-label="Filtrar laboratórios" className="flex rounded-md border border-[var(--color-line)] p-0.5">
           {FILTERS.map((f) => (

@@ -1,5 +1,6 @@
 /**
- * Trilha LLM: OWASP Top 10 for LLM Applications 2025 (LLM01 a LLM10) e avaliação final.
+ * Trilha LLM: OWASP Top 10 for LLM Applications 2025 (LLM01 a LLM10). A avaliação final da trilha é o Laboratório de prompts (llmLab.ts),
+ * não mais um módulo de cenários: o antigo módulo l11 (llmFinal.ts) deixou de ser carregado.
  *
  * RASCUNHO para revisão humana (Segurança da Informação, Arquitetura e AI Guild).
  * - Estrutura temática inspirada no range público LLMVault (github.com/CyberSunil/LLMVault, MIT): categorias,
@@ -13,7 +14,6 @@ import type { ScenarioVisual } from './privacyExtras.js';
 import type { LlmModuleContent } from './llmTypes.js';
 import { LLM_CONTENT_A } from './llmContentA.js';
 import { LLM_CONTENT_B } from './llmContentB.js';
-import { LLM_FINAL } from './llmFinal.js';
 import { LLM_CASES } from './llmCases.js';
 
 /** Embaralhamento determinístico (semente = id do cenário). */
@@ -35,7 +35,7 @@ function shuffleOptions(s: PrivacyScenario): PrivacyScenario {
 const OWASP_LLM = { label: 'OWASP GenAI Security Project: Top 10 for LLM Applications (página oficial)', url: 'https://genai.owasp.org/llm-top-10/' };
 const LLMVAULT = { label: 'Pratique (referência externa): LLMVault, range CTF de LLM (MIT). Rode isolado, sem expor à rede, e revise o código antes de uso corporativo', url: 'https://github.com/CyberSunil/LLMVault' };
 
-const CONTENT: LlmModuleContent[] = [...LLM_CONTENT_A, ...LLM_CONTENT_B, LLM_FINAL].sort((a, b) => a.order - b.order);
+const CONTENT: LlmModuleContent[] = [...LLM_CONTENT_A, ...LLM_CONTENT_B].sort((a, b) => a.order - b.order);
 const visuals: Record<string, ScenarioVisual> = {};
 
 export const LLM_MODULES: PrivacyModuleDefinition[] = CONTENT.map((c) => {

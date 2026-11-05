@@ -9,7 +9,7 @@
 ![Express](https://img.shields.io/badge/Express-4-000000?logo=express&logoColor=white)
 ![TypeScript](https://img.shields.io/badge/TypeScript-7-3178C6?logo=typescript&logoColor=white)
 ![Tailwind](https://img.shields.io/badge/Tailwind-4-06B6D4?logo=tailwindcss&logoColor=white)
-![OWASP](https://img.shields.io/badge/OWASP-Top%2010%202021-red)
+![OWASP](https://img.shields.io/badge/OWASP-Top%2010%202025-red)
 ![Trilhas](https://img.shields.io/badge/trilhas-6-orange)
 ![Testes](https://img.shields.io/badge/testes%20de%20conte%C3%BAdo-73-brightgreen)
 
@@ -33,6 +33,7 @@
 - [Trilhas de conteúdo](#trilhas-de-conteúdo): [LGPD](#lgpd) · [CIS Controls](#cis-controls-v81) · [ISO 27001](#isoiec-270012022) · [LLM](#segurança-com-llm-owasp-top-10-for-llm-applications-2025)
 - [Laboratório de prompts](#laboratório-de-prompts)
 - [Jornada e selo Security Champion](#jornada-e-selo-security-champion)
+- [Autenticação, usuários e relatório de conformidade](#autenticação-usuários-e-relatório-de-conformidade)
 - [Scripts](#scripts)
 - [Configuração](#configuração)
 - [Arquitetura](#arquitetura)
@@ -48,7 +49,7 @@
 |------|---------|
 | **Objetivo** | Formar Security Champions: o colaborador percorre 6 trilhas e, ao final, emite um selo interno de conclusão |
 | **Público-alvo** | Desenvolvedores e demais colaboradores (LGPD e CIS são em linguagem não técnica; OWASP e LLM têm pegada técnica) |
-| **Conteúdo** | 10 labs OWASP (1.610 pts) · trilha LGPD (9 módulos, 31 cenários) · CIS v8.1 (19 módulos, 87 cenários) · ISO 27001:2022 (12 módulos, 48 cenários) · LLM (11 módulos, 45 cenários) · 10 assistentes simulados no laboratório de prompts |
+| **Conteúdo** | 11 labs OWASP (1.760 pts) · trilha LGPD (9 módulos, 31 cenários) · CIS v8.1 (19 módulos, 87 cenários) · ISO 27001:2022 (12 módulos, 48 cenários) · LLM (10 módulos, 30 cenários + Laboratório de prompts como avaliação final) · 10 assistentes simulados no laboratório de prompts |
 | **Casos reais** | 18 (CIS) + 11 (ISO) + 10 (LLM) + casos da LGPD, todos com fonte pública citada e "Limites da fonte" |
 | **Ferramentas embutidas** | Console HTTP (repeater estilo Burp), workbench com Base64, JWT, hash, URL, CRLF, prototype pollution e `node-serialize` |
 | **Progresso** | Quizzes e labs: UI no `localStorage`. **Selo:** registrado e assinado no servidor (ver [Jornada e selo](#jornada-e-selo-security-champion)) |
@@ -64,9 +65,9 @@ Ordem sugerida das seis trilhas (seletor **OWASP / LGPD / CIS / ISO / LLM** no m
 | 1 | **LGPD** | Dados pessoais no dia a dia, direitos do titular, incidentes; avaliação final de 15 cenários |
 | 2 | **CIS Controls v8.1** | Os 18 controles com caso real, cenários avançados e avaliação final integrada |
 | 3 | **ISO/IEC 27001:2022** | Preparação para a certificação: cláusulas 4 a 10, Anexo A e avaliação em formato de auditoria |
-| 4 | **OWASP web (labs)** | 10 labs de ataque e correção em kill chain |
+| 4 | **OWASP web (labs)** | 11 labs de ataque e correção em kill chain |
 | 5 | **LLM (trilha)** | OWASP Top 10 for LLM Applications 2025 com casos reais |
-| 6 | **LLM (laboratório)** | Ataque a assistentes simulados e captura de flags |
+| 6 | **LLM (laboratório)** | Avaliação final da trilha LLM: ataque a assistentes simulados e captura de flags |
 
 O **nível do selo** (Bronze 70%, Prata 85%, Ouro 100%) é o da trilha mais atrasada.
 
@@ -78,7 +79,7 @@ O **nível do selo** (Bronze 70%, Prata 85%, Ouro 100%) é o da trilha mais atra
 - **Qualidade do quiz**: corrigido o viés em que a resposta correta era a mais longa em 100% dos 166 cenários; opções reescritas, posição da correta embaralhada e testes que impedem a regressão.
 - **Testes**: `npm run test:content` (73 testes) além de `test:labs` e `test:tools`.
 - **Identidade visual Opah IT**, dashboard e catálogo sóbrios (hairlines, raios pequenos), acessibilidade (tablist com setas, `focus-visible`, `aria-hidden` em ícones) e limite de 180 requisições/min por IP nas rotas de resposta.
-- Mantido do projeto original: navegação pela kill chain real, workbench de interceptação tolerante, A04 com caixa de e-mail simulada, A09 redesenhado e gabarito do professor em PDF.
+- Mantido do projeto original: navegação pela kill chain real, workbench de interceptação tolerante, A06 com caixa de e-mail simulada, A09 redesenhado e gabarito do professor em PDF.
 
 ## Quick start
 
@@ -113,18 +114,21 @@ Cada laboratório conduz o aluno por quatro etapas:
 
 As requisições de exemplo são *baselines* legítimos: respostas `401/400/403/500` nelas são **intencionais**. O aluno precisa adulterar a requisição para explorar; o payload só aparece nas dicas (opt-in) e no writeup. Todos os labs são subsistemas de uma empresa fictícia (*Nexus Varejo S.A.*) e formam um pentest black-box encadeado.
 
-| OWASP | Lab | CWE | Nível | Pts | Passo na kill chain |
-|-------|-----|-----|-------|----:|:-------------------:|
+| OWASP:2025 | Lab | CWE | Nível | Pts | Passo na kill chain |
+|-----------|-----|-----|-------|----:|:-------------------:|
 | A01 | IDOR no portal de holerites | CWE-639 | Iniciante | 100 | 3 |
-| A02 | Token de sessão reversível (Base64 não é cifra) | CWE-311 | Iniciante | 120 | 2 |
-| A03 | SQL Injection — bypass de autenticação e dump de dados | CWE-89 | Intermediário | 150 | 1 |
-| A04 | Reset de senha com token previsível | CWE-640 | Avançado | 200 | 6 |
-| A05 | Endpoint de debug exposto em produção | CWE-16 | Iniciante | 120 | 4 |
-| A06 | Componente desatualizado com CVE conhecido (prototype pollution) | CWE-1104 | Intermediário | 150 | 7 |
+| A01 (SSRF) | SSRF para metadados internos — o SSRF foi incorporado ao A01 em 2025 | CWE-918 | Avançado | 200 | 8 |
+| A02 | Endpoint de debug exposto em produção | CWE-16 | Iniciante | 120 | 4 |
+| A03 | Componente desatualizado com CVE conhecido (prototype pollution) | CWE-1104 | Intermediário | 150 | 7 |
+| A04 | Token de sessão reversível (Base64 não é cifra) | CWE-311 | Iniciante | 120 | 2 |
+| A05 | SQL Injection — bypass de autenticação e dump de dados | CWE-89 | Intermediário | 150 | 1 |
+| A06 | Reset de senha com token previsível | CWE-640 | Avançado | 200 | 6 |
 | A07 | JWT com algoritmo `none` (ou segredo vazado) | CWE-347 | Avançado | 200 | 5 |
 | A08 | Desserialização insegura (`node-serialize` RCE) | CWE-502 | Avançado | 220 | 9 |
 | A09 | Log injection → Stored XSS no dashboard do SOC | CWE-117 + CWE-79 | Intermediário | 150 | 10 |
-| A10 | SSRF para metadados internos | CWE-918 | Avançado | 200 | 8 |
+| A10 | Fail-open: exceção do motor de risco aprova a transferência (categoria nova em 2025) | CWE-636 | Intermediário | 150 | 11 |
+
+> Os `id` internos dos labs (ex.: `a05-misconfig-debug`) e as flags foram mantidos para preservar o progresso dos alunos; a numeração exibida e os endpoints `/api/aNN` seguem o OWASP Top 10:2025.
 
 ### Kill chain
 
@@ -132,20 +136,21 @@ O achado de um lab alimenta o próximo. Seguindo a ordem, o aluno vive um ataque
 
 ```mermaid
 flowchart LR
-  A03["1 · A03<br/>SQLi<br/>foothold"] --> A02["2 · A02<br/>Token Base64<br/>credencial"]
-  A02 --> A01["3 · A01<br/>IDOR<br/>enumeração"]
-  A01 --> A05["4 · A05<br/>Debug exposto<br/>leak"]
-  A05 --> A07["5 · A07<br/>JWT none<br/>privesc"]
-  A07 --> A04["6 · A04<br/>Reset previsível<br/>takeover"]
-  A04 --> A06["7 · A06<br/>Prototype pollution"]
-  A06 --> A10["8 · A10<br/>SSRF<br/>pivot"]
-  A10 --> A08["9 · A08<br/>Deserialização<br/>RCE"]
+  A05["1 · A05<br/>SQLi<br/>foothold"] --> A04["2 · A04<br/>Token Base64<br/>credencial"]
+  A04 --> A01["3 · A01<br/>IDOR<br/>enumeração"]
+  A01 --> A02["4 · A02<br/>Debug exposto<br/>leak"]
+  A02 --> A07["5 · A07<br/>JWT none<br/>privesc"]
+  A07 --> A06["6 · A06<br/>Reset previsível<br/>takeover"]
+  A06 --> A03["7 · A03<br/>Prototype pollution"]
+  A03 --> SSRF["8 · A01 SSRF<br/>pivot"]
+  SSRF --> A08["9 · A08<br/>Deserialização<br/>RCE"]
   A08 --> A09["10 · A09<br/>Log injection<br/>cobertura de rastros"]
+  A09 --> A10["11 · A10<br/>Fail-open<br/>exceção tratada errado"]
 ```
 
 ### Material do professor
 
-[`docs/Gabarito_Professor_OWASP_Top10_CyberShield.pdf`](docs/Gabarito_Professor_OWASP_Top10_CyberShield.pdf) traz, para os 10 laboratórios, o objetivo, o caminho de exploração validado contra `scripts/test-labs.mjs`, a flag esperada e os critérios de correção. É gerado a partir de `server/labs/metadata.ts` (a mesma fonte que o backend usa para validar as flags); qualquer mudança nos labs deve vir acompanhada de uma nova geração desse PDF.
+[`docs/Gabarito_Professor_OWASP_Top10_CyberShield.pdf`](docs/Gabarito_Professor_OWASP_Top10_CyberShield.pdf) traz, para os 10 laboratórios da edição anterior (OWASP 2021; o lab A10 de 2025 ainda não consta), o objetivo, o caminho de exploração validado contra `scripts/test-labs.mjs`, a flag esperada e os critérios de correção. É gerado a partir de `server/labs/metadata.ts` (a mesma fonte que o backend usa para validar as flags); qualquer mudança nos labs deve vir acompanhada de uma nova geração desse PDF.
 
 > 🔒 **Uso restrito ao corpo docente.** O arquivo contém todas as flags; não distribua aos alunos.
 
@@ -153,9 +158,9 @@ flowchart LR
 
 Capturas da versão atual do portal (dados fictícios, ambiente local).
 
-| Lab OWASP (A03) | Trilha ISO 27001 (cenário) |
+| Lab OWASP (A05) | Trilha ISO 27001 (cenário) |
 |:---:|:---:|
-| ![Lab OWASP A03](docs/screenshots/lab-owasp-a03.jpg) | ![Trilha ISO](docs/screenshots/trilha-iso.jpg) |
+| ![Lab OWASP A05](docs/screenshots/lab-owasp-a03.jpg) | ![Trilha ISO](docs/screenshots/trilha-iso.jpg) |
 | **Laboratório de prompts (LLM)** | **Jornada Security Champion** |
 | ![Laboratório de prompts](docs/screenshots/lab-prompts.jpg) | ![Jornada Security Champion](docs/screenshots/jornada-champion.jpg) |
 
@@ -197,7 +202,7 @@ Os **18 controles**, um por módulo, com caso real, salvaguardas-chave e **4 cen
 
 ### Segurança com LLM (OWASP Top 10 for LLM Applications 2025)
 
-11 módulos (LLM01 a LLM10 e avaliação final): por módulo, 1 cenário médio e 2 avançados (incluindo chats multi-turn).
+10 módulos (LLM01 a LLM10): por módulo, 1 cenário médio e 2 avançados (incluindo chats multi-turn). A **avaliação final** da trilha é o **Laboratório de prompts** (10 assistentes, uma flag por categoria), que substitui o antigo módulo de 15 cenários.
 
 - Estrutura temática inspirada no range público [LLMVault](https://github.com/CyberSunil/LLMVault) (MIT). Só o README e as listagens foram lidos; **nenhum texto, flag ou payload foi copiado** e a marca LLMVault™ não é da Opah. Para praticar com ele, rode isolado, sem expor à rede, e revise o código antes (o README cita `OPENAI_API_KEY` opcional: confirmar se há chamada a API externa).
 - Casos com fonte fraca, marcados nos cards: Replit (alegações de um cliente), Air Canada (resumos de escritórios; decisão não lida), Slack AI (fonte única), EchoLeak (sem CVSS).
@@ -225,11 +230,43 @@ Botão **Jornada Security Champion** no topo do menu lateral: rota das seis tril
 - **Privacidade (LGPD):** o único dado pessoal é o nome digitado na emissão, visível a quem tiver o ID; o aluno vê o aviso antes de emitir e pode **remover o selo** ou **apagar todos os seus dados** (`DELETE /api/champion/seal` e `/api/champion/me`).
 
 ### Limitações (leia antes de uso oficial)
-- **Identidade pseudônima, não autenticação.** O aluno é uma chave anônima (UUID v4 no navegador, header `x-learner-id`). Quem tiver a chave age como o aluno; trocar de navegador ou limpar os dados começa do zero. Vincular o selo a uma **pessoa real** exige integrar o login corporativo **[inserir provedor SSO Opah]** e substituir `learnerOf` em `server/index.ts`. O nome no selo continua digitado pelo aluno.
+- **Identidade:** com `AUTH_MODE=required` (padrão) o progresso e o selo pertencem a uma **conta autenticada** (próxima seção). Só no modo `optional` (dev/testes) o aluno é uma chave anônima (UUID v4 no navegador, header `x-learner-id`), que não é autenticação: quem tiver a chave age como o aluno. O nome no selo continua digitado pelo aluno.
 - **Quizzes automatizáveis:** o gabarito tem 3 ou 4 opções e um script pode tentar todas dentro do limite de requisições. O registro impede fraude casual, não quem automatiza; combine com SSO e, se necessário, revisão humana na emissão.
 - **Progresso anterior a esta versão não conta:** só respostas validadas pelo servidor depois dela entram no registro.
 - **Servidor único:** o registro é um arquivo local, sem banco nem alta disponibilidade. Para produção, usar banco e gestão de segredos.
 - **Aprovação pendente:** o selo diz "selo interno de conclusão de trilha, não é certificação profissional" e traz `[inserir responsável pela emissão do selo na Opah]`; aprovação da AI Guild e da Segurança da Informação.
+
+## Autenticação, usuários e relatório de conformidade
+
+> **Rascunho para revisão humana** (Segurança da Informação, Conformidade e DPO). Pensado para gerar **evidência de treinamento** em auditorias, mas não substitui a validação de critérios, retenção e base legal **[definir com o DPO]**.
+
+**Resumo:** login local com sessão por cookie, 4 perfis, gestão de usuários, relatório de desempenho exportável (Excel, JSON assinado, PDF) e trilha de auditoria encadeada por hash. Há um ponto de extensão para SSO/OIDC **[inserir provedor SSO Opah]** (trocar `authenticate()` em `server/auth.ts`).
+
+| Perfil | Pode |
+|--------|------|
+| **Aluno** | Fazer o treinamento; ver e exportar o **próprio** desempenho |
+| **Gestor** | Relatório da **equipe** (pessoas que o têm como gestor) |
+| **Auditor** | **Somente leitura** de usuários, relatórios e trilha de auditoria; exporta evidências |
+| **Administrador** | Criar, editar e desativar usuários, redefinir senhas; lê e exporta relatórios e auditoria |
+
+**Primeiro acesso:** na 1ª subida sem usuários, cria-se um administrador (`ADMIN_EMAIL`, padrão `admin@opah.local`). Com `ADMIN_BOOTSTRAP_PASSWORD` (que cumpra a política) ela é usada; sem ela, o servidor gera uma senha provisória **mostrada uma vez no console**. A troca é obrigatória no 1º login. Usuários criados na tela de administração recebem senha provisória aleatória exibida **uma única vez** ao administrador.
+
+**Controles de segurança** (cobertos por `scripts/test-access.mts` e pelo E2E `scripts/e2e-access.cjs`):
+- Senha com **scrypt** e salt por usuário; política (12+ caracteres, 3 tipos, sem partes do e-mail, sem senhas previsíveis); troca obrigatória no 1º acesso e após reset.
+- **Bloqueio** de conta (5 falhas = 15 min), limite por IP, mensagem de erro única (sem enumeração) e custo de hash também para e-mail inexistente.
+- Sessão: token de 256 bits guardado só como SHA-256; cookie `HttpOnly` + `SameSite=Strict` (+ `Secure` em produção); novo token a cada login e troca de senha; expiração por inatividade (30 min) e absoluta (8 h); encerrada ao desativar a conta ou mudar o perfil.
+- **CSRF:** cabeçalho `x-requested-with` obrigatório nas rotas que alteram estado com sessão. **RBAC** negado por padrão; tentativas negadas são auditadas. O último administrador é protegido e ninguém desativa a si mesmo.
+- O registro de treinamento de uma conta é **retido** (apagar é negado e auditado) porque é evidência. Pedidos de eliminação seguem o DPO.
+
+**Relatório de desempenho** (menu "Conformidade"): KPIs, conclusão por trilha, por equipe e por pessoa (situação: Aprovado, Final pendente, Em andamento, Não iniciado), filtros e detalhe por trilha com datas de conclusão.
+- **Excel (.xlsx)** no padrão visual Opah: abas Resumo (indicadores com fórmulas), Pessoas (filtros, cabeçalho congelado, cores por situação), Detalhe por trilha (formato longo, bom para tabela dinâmica) e Critérios e limites; painel com cartões de KPI e barras de dados, pronto para imprimir em A4 paisagem. **JSON assinado** (HMAC-SHA256 do conteúdo canônico, verificável pela interface; qualquer alteração é detectada) e **PDF** pela impressão do navegador (A4 paisagem, cabeçalho Opah, id/hash/assinatura, rodapé de rascunho).
+- Só conta o que o servidor validou. **Limite:** apenas acertos e suas datas são registrados (sem tentativas, erros ou tempo de estudo). A assinatura prova integridade desde a geração, não aderência a uma norma.
+
+**Trilha de auditoria** (`data/audit-log.jsonl`): login, falha, bloqueio, logout, troca e reset de senha, criação, edição e desativação de usuários, vínculo de progresso, selo, visualização e exportação de relatório, acessos negados. Cada evento traz o hash do anterior (HMAC); editar, remover ou reordenar linhas é detectado e a interface mostra "Cadeia comprometida". **Limite:** quem controla o arquivo **e** a chave refaz a cadeia; guarde o hash do último evento em um repositório imutável externo **[definir com a Conformidade]**. Contém e-mail e IP (dados pessoais) e nunca grava senhas nem tokens.
+
+**Migração:** no 1º login, se o navegador tinha progresso anônimo e a conta ainda não tem progresso, ele é **vinculado à conta** (uma vez, sem sobrescrever e sem tomar de outra conta). Depois, o servidor é a fonte da verdade e o navegador é limpo no logout (computador compartilhado).
+
+**Limitações:** usuários em arquivo JSON e sessões em memória (reiniciar o servidor encerra as sessões; instância única); sem recuperação de senha por e-mail (o administrador redefine); sem MFA; em produção, servir por HTTPS e definir `COOKIE_SECURE=true`.
 
 ## Scripts
 
@@ -242,9 +279,11 @@ Botão **Jornada Security Champion** no topo do menu lateral: rota das seis tril
 | `npm run build` | Build de produção do frontend |
 | `npm run preview` | Serve o build localmente |
 | `npm run lint` | Type-check (`tsc --noEmit`) |
-| `npm run test:labs` | Suíte E2E dos 10 labs OWASP |
+| `npm run test:labs` | Suíte E2E dos 11 labs OWASP |
 | `npm run test:tools` | Testes das ferramentas do workbench |
-| `npm run test:content` | 73 testes: quizzes das 4 trilhas, labs de prompt e selo Champion |
+| `npm run test:content` | Quizzes das 4 trilhas, labs de prompt, selo Champion e autenticação, perfis, relatório e auditoria |
+| `node scripts/e2e-champion-journey.cjs` | E2E (Playwright) da jornada do aluno, em modo anônimo |
+| `node scripts/e2e-access.cjs` | E2E (Playwright) de login, perfis, usuários, relatório (Excel/JSON/PDF) e auditoria |
 | `npm run db:setup` | Cria schema e dados-semente no Postgres/Supabase |
 
 ## Configuração
@@ -256,6 +295,11 @@ Sem `.env`, tudo funciona com SQLite em memória. Para customizar, copie `.env.e
 | `DATABASE_URL` | Não | Connection string Postgres/Supabase. Sem ela, usa SQLite em memória. Depois de definir, rode `npm run db:setup` |
 | `API_PORT` | Não | Porta do backend (padrão `4000`) |
 | `CHAMPION_SIGNING_KEY` | Não | Chave de assinatura dos selos. Sem ela, o servidor gera `data/.signing-key`. Guarde-a: trocá-la invalida os selos já emitidos |
+| `AUTH_MODE` | Não | `required` (padrão: exige login) ou `optional` (aluno anônimo; só dev/testes) |
+| `ADMIN_EMAIL` / `ADMIN_BOOTSTRAP_PASSWORD` | Não | E-mail e senha provisória do 1º administrador (só usados se não houver usuários). Sem a senha, é gerada e mostrada uma vez no console |
+| `ALLOWED_EMAIL_DOMAIN` | Não | Restringe os e-mails dos usuários a um domínio (ex.: `suaempresa.com.br`) |
+| `COOKIE_SECURE` | Não | `true` marca o cookie de sessão como `Secure` (obrigatório atrás de HTTPS; implícito com `NODE_ENV=production`) |
+| `CHAMPION_DATA_DIR` | Não | Pasta de `champion-ledger.json`, `users.json` e `audit-log.jsonl` (padrão `data/`). Faça backup |
 | `GEMINI_API_KEY` | Não | Presente no template; veja `.env.example` |
 | `APP_URL` | Não | URL de hospedagem, usada pelo template |
 
@@ -283,7 +327,7 @@ server/                       Backend Express (rode só local)
   champion.ts                 registro de progresso e selo assinado (HMAC)
   db.ts, dbSetup.ts           SQLite (node:sqlite) ou Postgres, com seed vulnerável
   labs/
-    metadata.ts, routes.ts    labs OWASP: fonte única (flag, writeup) e endpoints A01..A10
+    metadata.ts, routes.ts    labs OWASP: fonte única (flag, writeup) e endpoints A01..A10 (OWASP Top 10:2025)
     privacy*.ts               trilha LGPD (motor genérico, casos, avaliação final)
     cis*.ts                   trilha CIS (controles, casos, cenários, avaliação final)
     iso*.ts                   trilha ISO 27001 (cláusulas, Anexo A, casos, avaliação final)
@@ -304,7 +348,7 @@ Mesmo sendo "vulnerável", o backend não coloca a máquina do aluno em risco:
 
 - ✅ **Sem execução de comandos no SO** (nenhum `child_process`).
 - ✅ **Sem egress de rede real** no lab de SSRF: usa um *resolver mock* interno.
-- ✅ **Prototype pollution** (A06) é revertida imediatamente após a prova.
+- ✅ **Prototype pollution** (A03) é revertida imediatamente após a prova.
 - ✅ **Banco em memória** (`:memory:`), recriado a cada start.
 - ✅ **Assistentes do laboratório de prompts são regras locais**: sem LLM, sem chamadas externas.
 
@@ -312,11 +356,11 @@ Mesmo sendo "vulnerável", o backend não coloca a máquina do aluno em risco:
 
 ## Testes
 
-Os testes de lab exigem um servidor **recém-iniciado** (seed limpo), pois o A04 reseta a senha do admin.
+Os testes de lab exigem um servidor **recém-iniciado** (seed limpo), pois o A06 reseta a senha do admin.
 
 ```bash
 npm run dev:api        # terminal 1
-npm run test:labs      # terminal 2: exploit positivo + casos negativos dos 10 labs
+npm run test:labs      # terminal 2: exploit positivo + casos negativos dos 11 labs
 npm run test:tools     # ferramentas do workbench
 npm run test:content   # não precisa de servidor: conteúdo, labs de prompt e selo
 npm run lint           # type-check
@@ -326,7 +370,7 @@ npm run lint           # type-check
 
 ## Referências
 
-- [OWASP Top 10 (2021)](https://owasp.org/Top10/) · [OWASP Cheat Sheet Series](https://cheatsheetseries.owasp.org/) · [CWE / MITRE](https://cwe.mitre.org/)
+- [OWASP Top 10:2025](https://top10.owasp.org/2025/) · [OWASP Cheat Sheet Series](https://cheatsheetseries.owasp.org/) · [CWE / MITRE](https://cwe.mitre.org/)
 - [OWASP Top 10 for LLM Applications](https://genai.owasp.org/llm-top-10/)
 - [CIS Critical Security Controls](https://www.cisecurity.org/controls/cis-controls-list) · [CIS Controls Navigator](https://www.cisecurity.org/controls/cis-controls-navigator)
 - [ISO/IEC 27001](https://www.iso.org/standard/27001) (norma paga; este projeto não a reproduz)

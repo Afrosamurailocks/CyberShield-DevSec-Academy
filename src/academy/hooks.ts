@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import type { Lab, Progress, PrivacyModule, PrivacyProgress, TrailKind } from './types';
-import { fetchLabs, loadProgress, saveProgress, fetchTrail, loadTrailProgress, saveTrailProgress } from './api';
+import { fetchLabs, loadProgress, saveProgress, fetchTrail, loadTrailProgress, saveTrailProgress, fetchPromptLabs, loadPromptLabProgress, LAB_EVENT } from './api';
 
 /** Carrega o catálogo de labs do backend, com cleanup para evitar setState pós-unmount. */
 export function useLabs() {
@@ -77,4 +77,22 @@ export function useTrail(kind: TrailKind) {
   ), [modules, progress]);
 
   return { modules, loading, error, progress, complete, reset, doneModuleIds };
+}
+
+/** Avaliação final da trilha LLM = Laboratório de prompts: quantas flags foram capturadas (progresso do aluno neste navegador). */
+export function useFinalLab(enabled: boolean) {
+  const [total, setTotal] = useState(0);
+  const [solved, setSolved] = useState(() => Object.keys(loadPromptLabProgress().solved).length);
+
+  useEffect(() => {
+    if (!enabled) return;
+    let alive = true;
+    fetchPromptLabs().then((l) => { if (alive) setTotal(l.length); }).catch(() => { /* sem total: a UI omite o bloco */ });
+    const sync = () => setSolved(Object.keys(loadPromptLabProgress().solved).length);
+    window.addEventListener(LAB_EVENT, sync);
+    sync();
+    return () => { alive = false; window.removeEventListener(LAB_EVENT, sync); };
+  }, [enabled]);
+
+  return { solved, total };
 }

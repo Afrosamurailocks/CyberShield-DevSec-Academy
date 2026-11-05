@@ -14,7 +14,7 @@
     "lint": "tsc --noEmit",
     "test:labs": "node scripts/test-labs.mjs",
     "test:tools": "tsx scripts/test-tools.mts",
-    "test:content": "tsx --test scripts/test-content.mts scripts/test-prompt-labs.mts scripts/test-champion.mts scripts/test-champion-server.mts",
+    "test:content": "tsx --test scripts/test-content.mts scripts/test-prompt-labs.mts scripts/test-champion.mts scripts/test-champion-server.mts scripts/test-access.mts",
     "db:setup": "tsx server/dbSetup.ts"
   },
   "dependencies": {
@@ -24,6 +24,7 @@
     "@vitejs/plugin-react": "^6.1.1",
     "canvas-confetti": "^1.9.4",
     "dotenv": "^17.2.3",
+    "exceljs": "^4.4.0",
     "express": "^4.21.2",
     "lucide-react": "^0.546.0",
     "motion": "^12.23.24",
