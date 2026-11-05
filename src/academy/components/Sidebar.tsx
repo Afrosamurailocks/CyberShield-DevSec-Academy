@@ -106,11 +106,8 @@ export const Sidebar = memo(function Sidebar({ area, onArea, labs, solvedIds, ac
     <nav aria-label="Navegação" className="flex h-full flex-col bg-[var(--color-surface)]">
       {/* Marca */}
       <div className="flex items-center gap-3 border-b border-[var(--color-line)] px-4 py-3">
-        <img src="/brand/cybershield-mark.svg" alt="" aria-hidden="true" className="h-8 w-8 shrink-0" />
-        <div className="min-w-0">
-          <h1 className="truncate text-[13px] font-semibold leading-tight">CyberShield</h1>
-          <p className="truncate text-[10.5px] leading-tight text-slate-400">DevSec Academy</p>
-        </div>
+        <img src="/brand/cybershield-logo.png" alt="" aria-hidden="true" className="h-11 w-auto shrink-0" />
+        <h1 className="sr-only">CyberShield DevSec Academy</h1>
       </div>
 
       {champion && (

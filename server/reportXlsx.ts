@@ -1,11 +1,11 @@
 /**
- * Planilha Excel (.xlsx) do relatório de desempenho, (grafite + laranja, Arial, marca).
+ * Planilha Excel (.xlsx) do relatório de desempenho, (azul-marinho + azul, Arial, marca).
  * RASCUNHO para revisão humana. A planilha é para LEITURA/análise; a versão ASSINADA do relatório é o JSON com o mesmo ID
  * (o SHA-256 do conteúdo vai no Resumo para ligar as duas). Totais do Resumo são FÓRMULAS sobre a aba "Pessoas".
  *
- * Design: sem grade; Resumo com cartões de KPI (degradê suave, filete de cor), títulos de seção com marcador laranja e barras
+ * Design: sem grade; Resumo com cartões de KPI (degradê suave, filete de cor), títulos de seção com marcador azul e barras
  * de dados; abas de dados (Pessoas, Detalhe) com CABEÇALHO COMPACTO (1 linha de marca + faixa de grupos + títulos de coluna em
- * degradê grafite com filete laranja) para que o painel congelado ocupe pouco espaço, sem células mescladas atravessando a
+ * degradê azul-marinho com filete azul) para que o painel congelado ocupe pouco espaço, sem células mescladas atravessando a
  * divisão de colunas congeladas; faixas alternadas, linhas horizontais finas, cores semânticas sempre acompanhadas de texto e
  * níveis com cor de medalha (Ouro, Prata, Bronze).
  * Abas: Resumo · Treinamentos · Pessoas · Detalhe por trilha · Critérios e limites.
@@ -17,8 +17,8 @@ import ExcelJS from 'exceljs';
 import { TRACKS, TRACK_LABEL, SHORT, type ReportDoc } from './report.js';
 
 const C = {
-  ink: 'FF1E1E20', ink2: 'FF2F2F34', ink3: 'FF3A3A40', orange: 'FFEE7D30', orangeSoft: 'FFF4A23F', orangeTint: 'FFFDEBDD', paper: 'FFFFFFFF', zebra: 'FFF7F7F8', card: 'FFF1F1F4',
-  hair: 'FFE2E2E5', text: 'FF1E1E20', muted: 'FF6B6B70', ok: 'FF1F9D6B', okBg: 'FFDDF3E8', okText: 'FF0B6B45', warn: 'FFE5A100', warnBg: 'FFFFF1D6', warnText: 'FF8A5A00',
+  ink: 'FF0B1019', ink2: 'FF16202F', ink3: 'FF1F2B3F', brand: 'FF2F8BFF', brand2: 'FF4CC3FF', brandTint: 'FFE3F0FF', paper: 'FFFFFFFF', zebra: 'FFF4F7FB', card: 'FFEEF2F8',
+  hair: 'FFDCE3EE', text: 'FF0B1019', muted: 'FF5B6678', ok: 'FF1F9D6B', okBg: 'FFDDF3E8', okText: 'FF0B6B45', warn: 'FFE5A100', warnBg: 'FFFFF1D6', warnText: 'FF8A5A00',
   info: 'FF3B82C4', infoBg: 'FFDDEBFA', infoText: 'FF1F5A99', idle: 'FF9A9AA0', idleBg: 'FFEAEAEC', idleText: 'FF55555A', draft: 'FFFFF4E5',
 };
 const FONT = 'Arial';
@@ -31,7 +31,7 @@ const LOGO = (() => {
   }
   return null;
 })();
-const LOGO_H = 28; // px
+const LOGO_H = 30; // px
 const f = (o: Partial<ExcelJS.Font> = {}): Partial<ExcelJS.Font> => ({ name: FONT, size: 10, color: { argb: C.text }, ...o });
 const fill = (argb: string): ExcelJS.Fill => ({ type: 'pattern', pattern: 'solid', fgColor: { argb } });
 /** Degradê linear (degree 0 = esquerda→direita, 90 = cima→baixo). */
@@ -50,37 +50,37 @@ const SHEET = { trainings: 'Treinamentos', people: 'Pessoas', detail: 'Detalhe p
 const DRAFT = 'RASCUNHO PARA REVISÃO HUMANA · validar critérios, retenção e uso como evidência com a Conformidade e o DPO · contém dados pessoais';
 const col = (n: number) => { let s = ''; for (let x = n; x > 0; x = Math.floor((x - 1) / 26)) s = String.fromCharCode(65 + ((x - 1) % 26)) + s; return s; };
 
-const logo = (ws: ExcelJS.Worksheet, id: number | undefined, row = 0.2) => {
-  if (id !== undefined && LOGO) ws.addImage(id, { tl: { col: 1.08, row }, ext: { width: Math.round(LOGO_H * LOGO.ratio), height: LOGO_H }, editAs: 'oneCell' });
+const logo = (ws: ExcelJS.Worksheet, id: number | undefined, row = 0.2, h = LOGO_H) => {
+  if (id !== undefined && LOGO) ws.addImage(id, { tl: { col: 1.08, row }, ext: { width: Math.round(h * LOGO.ratio), height: h }, editAs: 'oneCell' });
 };
 
 /** Faixa grande (Resumo e Critérios): marca, título e aviso de rascunho. Coluna A é margem. */
 function banner(ws: ExcelJS.Worksheet, cols: number, title: string, sub: string, logoId?: number) {
-  for (let c = 1; c <= cols; c++) { ws.getCell(1, c).fill = grad(C.ink, C.ink2, 0); ws.getCell(2, c).fill = grad(C.ink, C.ink2, 0); ws.getCell(3, c).fill = grad(C.orange, C.orangeSoft, 0); ws.getCell(4, c).fill = fill(C.draft); }
+  for (let c = 1; c <= cols; c++) { ws.getCell(1, c).fill = grad(C.ink, C.ink2, 0); ws.getCell(2, c).fill = grad(C.ink, C.ink2, 0); ws.getCell(3, c).fill = grad(C.brand, C.brand2, 0); ws.getCell(4, c).fill = fill(C.draft); }
   ws.mergeCells(1, 2, 1, cols); ws.mergeCells(2, 2, 2, cols); ws.mergeCells(4, 2, 4, cols);
-  const a = ws.getCell(1, 2); a.value = 'CYBERSHIELD DEVSEC ACADEMY'; a.font = f({ size: 9, bold: true, color: { argb: C.orangeSoft } }); a.alignment = { vertical: 'middle', horizontal: 'right', indent: 1 };
-  logo(ws, logoId, 0.17);
+  const a = ws.getCell(1, 2); a.value = 'CYBERSHIELD DEVSEC ACADEMY'; a.font = f({ size: 9, bold: true, color: { argb: C.brand2 } }); a.alignment = { vertical: 'middle', horizontal: 'right', indent: 1 };
+  logo(ws, logoId, 0.08, 44);
   const b = ws.getCell(2, 2); b.value = title; b.font = f({ size: 20, bold: true, color: { argb: C.paper } }); b.alignment = { vertical: 'middle' };
   const d = ws.getCell(4, 2); d.value = sub; d.font = f({ size: 8.5, bold: true, color: { argb: 'FF7A3D00' } }); d.alignment = { vertical: 'middle', wrapText: true };
-  ws.getRow(1).height = 38; ws.getRow(2).height = 34; ws.getRow(3).height = 3; ws.getRow(4).height = 24;
+  ws.getRow(1).height = 52; ws.getRow(2).height = 34; ws.getRow(3).height = 3; ws.getRow(4).height = 24;
 }
 /**
  * Faixa COMPACTA (abas de dados, painel congelado): uma linha com logo (coluna B), título e selo de rascunho. As mesclagens
  * começam depois da coluna B para nunca atravessar a divisão das colunas congeladas.
  */
 function compactBanner(ws: ExcelJS.Worksheet, cols: number, title: string, logoId?: number) {
-  for (let c = 1; c <= cols; c++) { const x = ws.getCell(1, c); x.fill = grad(C.ink, C.ink3, 0); x.border = { bottom: { style: 'thick', color: { argb: C.orange } } }; }
+  for (let c = 1; c <= cols; c++) { const x = ws.getCell(1, c); x.fill = grad(C.ink, C.ink3, 0); x.border = { bottom: { style: 'thick', color: { argb: C.brand } } }; }
   ws.mergeCells(1, 3, 1, cols - 3); ws.mergeCells(1, cols - 2, 1, cols);
   const t = ws.getCell(1, 3); t.value = title; t.font = f({ size: 15, bold: true, color: { argb: C.paper } }); t.alignment = { vertical: 'middle', horizontal: 'left', indent: 1 };
-  const d = ws.getCell(1, cols - 2); d.value = 'RASCUNHO · REVISÃO HUMANA'; d.font = f({ size: 8, bold: true, color: { argb: C.orangeSoft } }); d.alignment = { vertical: 'middle', horizontal: 'right', indent: 1 };
+  const d = ws.getCell(1, cols - 2); d.value = 'RASCUNHO · REVISÃO HUMANA'; d.font = f({ size: 8, bold: true, color: { argb: C.brand2 } }); d.alignment = { vertical: 'middle', horizontal: 'right', indent: 1 };
   logo(ws, logoId, 0.15); ws.getRow(1).height = 38;
 }
-/** Títulos de coluna: degradê grafite, texto branco, filete laranja embaixo e separadores finos. */
+/** Títulos de coluna: degradê azul-marinho, texto branco, filete azul embaixo e separadores finos. */
 function headRow(row: ExcelJS.Row, from: number, to?: number, h = 32) {
   for (let n = from; n <= (to ?? row.cellCount); n++) {
     const c = row.getCell(n);
     c.font = f({ bold: true, color: { argb: C.paper }, size: 9 }); c.fill = grad(C.ink3, C.ink, 90);
-    c.border = { bottom: { style: 'thick', color: { argb: C.orange } }, left: { style: 'thin', color: { argb: C.ink3 } }, right: { style: 'thin', color: { argb: C.ink3 } } };
+    c.border = { bottom: { style: 'thick', color: { argb: C.brand } }, left: { style: 'thin', color: { argb: C.ink3 } }, right: { style: 'thin', color: { argb: C.ink3 } } };
     c.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
   }
   row.height = h;
@@ -97,8 +97,8 @@ const dataBar = (ref: string, argb: string, priority: number): ExcelJS.Condition
 export async function reportToXlsx(doc: ReportDoc): Promise<Buffer> {
   const wb = new ExcelJS.Workbook();
   wb.creator = 'CyberShield DevSec Academy'; wb.title = `Relatório de desempenho ${doc.meta.reportId}`; wb.created = new Date(doc.meta.generatedAt);
-  const ws = wb.addWorksheet(SHEET.summary, { views: [{ showGridLines: false }], properties: { tabColor: { argb: C.orange } } });
-  const wt = wb.addWorksheet(SHEET.trainings, { views: [{ showGridLines: false }], properties: { tabColor: { argb: C.orangeSoft } } });
+  const ws = wb.addWorksheet(SHEET.summary, { views: [{ showGridLines: false }], properties: { tabColor: { argb: C.brand } } });
+  const wt = wb.addWorksheet(SHEET.trainings, { views: [{ showGridLines: false }], properties: { tabColor: { argb: C.brand2 } } });
   const wp = wb.addWorksheet(SHEET.people, { views: [{ state: 'frozen', xSplit: 2, ySplit: 3, topLeftCell: 'C4', activeCell: 'C4', showGridLines: false, zoomScale: 100 }], properties: { tabColor: { argb: C.ink } } });
   const wd = wb.addWorksheet(SHEET.detail, { views: [{ state: 'frozen', ySplit: 3, topLeftCell: 'A4', activeCell: 'B4', showGridLines: false, zoomScale: 100 }], properties: { tabColor: { argb: C.ink2 } } });
   const wc = wb.addWorksheet(SHEET.crit, { views: [{ showGridLines: false }], properties: { tabColor: { argb: C.idle } } });
@@ -118,9 +118,9 @@ export async function reportToXlsx(doc: ReportDoc): Promise<Buffer> {
   const groups: [number, number, string][] = [[3, cGeral, 'IDENTIFICAÇÃO E SITUAÇÃO'], [cT0, cT1, 'CONCLUSÃO POR TRILHA'], [cFin, nP, 'ATIVIDADE E SELO']];
   for (const [a, b, t] of groups) {
     wp.mergeCells(2, a, 2, b); wp.getCell(2, a).value = t;
-    for (let c = a; c <= b; c++) { const x = wp.getCell(2, c); x.font = f({ size: 8.5, bold: true, color: { argb: C.ink } }); x.fill = grad(C.orange, C.orangeSoft, 0); x.alignment = { horizontal: 'center', vertical: 'middle' }; x.border = { left: c === a ? { style: 'medium', color: { argb: C.paper } } : undefined, right: c === b ? { style: 'medium', color: { argb: C.paper } } : undefined }; }
+    for (let c = a; c <= b; c++) { const x = wp.getCell(2, c); x.font = f({ size: 8.5, bold: true, color: { argb: C.ink } }); x.fill = grad(C.brand, C.brand2, 0); x.alignment = { horizontal: 'center', vertical: 'middle' }; x.border = { left: c === a ? { style: 'medium', color: { argb: C.paper } } : undefined, right: c === b ? { style: 'medium', color: { argb: C.paper } } : undefined }; }
   }
-  { const x = wp.getCell(2, 2); x.fill = grad(C.orange, C.orangeSoft, 0); x.border = { right: { style: 'medium', color: { argb: C.paper } } }; } // B2 fica fora das mesclagens: coluna congelada
+  { const x = wp.getCell(2, 2); x.fill = grad(C.brand, C.brand2, 0); x.border = { right: { style: 'medium', color: { argb: C.paper } } }; } // B2 fica fora das mesclagens: coluna congelada
   wp.getRow(2).height = 20;
   wp.getRow(3).values = pHead; headRow(wp.getRow(3), 2, nP, 34);
   doc.rows.forEach((r, i) => {
@@ -146,7 +146,7 @@ export async function reportToXlsx(doc: ReportDoc): Promise<Buffer> {
   if (doc.rows.length) {
     const rng = `${col(cGeral)}4:${col(cT1)}${lastP}`;
     wp.autoFilter = { from: { row: 3, column: 2 }, to: { row: lastP, column: nP } };
-    wp.addConditionalFormatting(dataBar(rng, C.orangeSoft, 1));
+    wp.addConditionalFormatting(dataBar(rng, C.brand2, 1));
     wp.addConditionalFormatting({ ref: rng, rules: [
       { type: 'cellIs', operator: 'greaterThanOrEqual', formulae: [1], priority: 2, style: { font: { bold: true, color: { argb: C.okText } } } },
       { type: 'cellIs', operator: 'equal', formulae: [0], priority: 3, style: { font: { color: { argb: 'FFB0B0B5' } } } },
@@ -171,7 +171,7 @@ export async function reportToXlsx(doc: ReportDoc): Promise<Buffer> {
     row.height = 22; n++;
   }
   [2, 28, 32, 18, 26, 13, 10, 16, 22, 22].forEach((w, i) => { wd.getColumn(i + 1).width = w; });
-  if (n) { wd.autoFilter = { from: { row: 3, column: 2 }, to: { row: 3 + n, column: dHead.length } }; wd.addConditionalFormatting(dataBar(`H4:H${3 + n}`, C.orangeSoft, 1)); }
+  if (n) { wd.autoFilter = { from: { row: 3, column: 2 }, to: { row: 3 + n, column: dHead.length } }; wd.addConditionalFormatting(dataBar(`H4:H${3 + n}`, C.brand2, 1)); }
   printSetup(wd, doc, 3);
 
   // ═════════ Resumo (painel) ═════════
@@ -180,10 +180,10 @@ export async function reportToXlsx(doc: ReportDoc): Promise<Buffer> {
   banner(ws, W, 'Relatório de desempenho do treinamento', DRAFT, logoId);
   const P = `'${SHEET.people}'`; const last = Math.max(4, lastP);
   const rngSit = `${P}!$${col(cSit)}$4:$${col(cSit)}$${last}`; const rngGeral = `${P}!$${col(cGeral)}$4:$${col(cGeral)}$${last}`; const rngName = `${P}!$B$4:$B$${last}`;
-  /** Título de seção: marcador laranja à esquerda, degradê suave e filete laranja embaixo. */
+  /** Título de seção: marcador azul à esquerda, degradê suave e filete azul embaixo. */
   const sect = (row: number, text: string) => {
     ws.mergeCells(row, 2, row, W);
-    for (let k = 2; k <= W; k++) { const x = ws.getCell(row, k); x.fill = grad(C.orangeTint, C.paper, 0); x.border = { bottom: { style: 'medium', color: { argb: C.orange } }, left: k === 2 ? { style: 'thick', color: { argb: C.orange } } : undefined }; }
+    for (let k = 2; k <= W; k++) { const x = ws.getCell(row, k); x.fill = grad(C.brandTint, C.paper, 0); x.border = { bottom: { style: 'medium', color: { argb: C.brand } }, left: k === 2 ? { style: 'thick', color: { argb: C.brand } } : undefined }; }
     const c = ws.getCell(row, 2); c.value = text; c.font = f({ bold: true, size: 13 }); c.alignment = { vertical: 'middle', indent: 1 }; ws.getRow(row).height = 26;
   };
 
@@ -207,7 +207,7 @@ export async function reportToXlsx(doc: ReportDoc): Promise<Buffer> {
     { label: 'FINAL PENDENTE', formula: `COUNTIF(${rngSit},"Final pendente")`, result: s.bySituation['Final pendente'], fmt: '0', accent: C.warn, fg: C.warnText, sub: 'avaliação obrigatória' },
     { label: 'EM ANDAMENTO', formula: `COUNTIF(${rngSit},"Em andamento")`, result: s.bySituation['Em andamento'], fmt: '0', accent: C.info, fg: C.infoText, sub: 'treinamento em curso' },
     { label: 'NÃO INICIADO', formula: `COUNTIF(${rngSit},"Não iniciado")`, result: s.bySituation['Não iniciado'], fmt: '0', accent: C.idle, fg: C.idleText, sub: `${s.neverLoggedIn} nunca acessaram` },
-    { label: 'MÉDIA GERAL', formula: `IFERROR(AVERAGE(${rngGeral}),0)`, result: s.averageOverallPct / 100, fmt: '0%', accent: C.orange, fg: C.text, sub: 'média das 6 trilhas' },
+    { label: 'MÉDIA GERAL', formula: `IFERROR(AVERAGE(${rngGeral}),0)`, result: s.averageOverallPct / 100, fmt: '0%', accent: C.brand, fg: C.text, sub: 'média das 6 trilhas' },
   ];
   const top = r;
   cards.forEach((k, i) => {
@@ -254,7 +254,7 @@ export async function reportToXlsx(doc: ReportDoc): Promise<Buffer> {
     rowFmt(r, [[2, 5], [6, 6], [7, 10], [11, 12]], i % 2 === 1);
     ws.getCell(r, 2).value = TRACK_LABEL[t]; ws.getCell(r, 6).value = doc.meta.trackTotals[t]; ws.getCell(r, 6).numFmt = '0';
     ws.getCell(r, 7).value = (s.byTrack[t]?.averagePct ?? 0) / 100; ws.getCell(r, 7).numFmt = PCT; ws.getCell(r, 11).value = s.byTrack[t]?.completed ?? 0;
-    bars.push({ ref: `G${r}`, color: C.orangeSoft }); r++;
+    bars.push({ ref: `G${r}`, color: C.brand2 }); r++;
   });
   r++;
 
@@ -264,7 +264,7 @@ export async function reportToXlsx(doc: ReportDoc): Promise<Buffer> {
   s.byTeam.forEach((t, i) => {
     rowFmt(r, [[2, 5], [6, 6], [7, 7], [8, 8], [9, 12]], i % 2 === 1);
     ws.getCell(r, 2).value = t.team; ws.getCell(r, 6).value = t.users; ws.getCell(r, 7).value = t.approved; ws.getCell(r, 8).value = t.approvalRatePct / 100; ws.getCell(r, 8).numFmt = PCT;
-    ws.getCell(r, 9).value = t.averageOverallPct / 100; ws.getCell(r, 9).numFmt = PCT; bars.push({ ref: `I${r}`, color: C.orangeSoft }); r++;
+    ws.getCell(r, 9).value = t.averageOverallPct / 100; ws.getCell(r, 9).numFmt = PCT; bars.push({ ref: `I${r}`, color: C.brand2 }); r++;
   });
   r++;
   sect(r, 'Níveis Security Champion'); r += 2;
@@ -295,7 +295,7 @@ export async function reportToXlsx(doc: ReportDoc): Promise<Buffer> {
       const longest = Math.max(...[t.description.length / 46, t.format.length / 38, t.finalEvaluation.length / 34, t.sourceNote.length / 46, t.title.length / 28]);
       row.height = Math.max(36, Math.ceil(longest) * 13.5 + 10);
     });
-    wt.addConditionalFormatting(dataBar(`L7:L${6 + doc.meta.trainings.length}`, C.orangeSoft, 1));
+    wt.addConditionalFormatting(dataBar(`L7:L${6 + doc.meta.trainings.length}`, C.brand2, 1));
     const note = wt.getCell(8 + doc.meta.trainings.length, 2); note.value = 'Itens = cenários, laboratórios ou assistentes concluídos para contar 100% da trilha. "Média de conclusão" e "Com 100%" valem para as pessoas deste relatório. Campos [definir …] precisam de validação humana.';
     note.font = f({ size: 8.5, italic: true, color: { argb: C.muted } });
     printSetup(wt, doc, 6);
@@ -310,7 +310,7 @@ export async function reportToXlsx(doc: ReportDoc): Promise<Buffer> {
   };
   const sec = (t: string) => {
     wc.mergeCells(k, 2, k, 3);
-    for (let c = 2; c <= 3; c++) { const x = wc.getCell(k, c); x.fill = grad(C.orangeTint, C.paper, 0); x.border = { bottom: { style: 'medium', color: { argb: C.orange } }, left: c === 2 ? { style: 'thick', color: { argb: C.orange } } : undefined }; }
+    for (let c = 2; c <= 3; c++) { const x = wc.getCell(k, c); x.fill = grad(C.brandTint, C.paper, 0); x.border = { bottom: { style: 'medium', color: { argb: C.brand } }, left: c === 2 ? { style: 'thick', color: { argb: C.brand } } : undefined }; }
     const c = wc.getCell(k, 2); c.value = t; c.font = f({ bold: true, size: 13 }); c.alignment = { vertical: 'middle', indent: 1 }; wc.getRow(k).height = 26; k += 1;
   };
   sec('Situações');

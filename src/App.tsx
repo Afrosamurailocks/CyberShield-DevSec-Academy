@@ -136,7 +136,7 @@ export default function App() {
               className="rounded-md p-1.5 text-slate-300 hover:bg-slate-800">
               <Menu size={20} aria-hidden="true" />
             </button>
-            <img src="/brand/cybershield-mark.svg" alt="" aria-hidden="true" className="h-6 w-6" />
+            <img src="/brand/cybershield-mark.png" alt="" aria-hidden="true" className="h-7 w-auto" />
             <span className="text-sm font-semibold text-slate-300">CyberShield DevSec Academy</span>
             <span className="ml-auto text-xs text-slate-400">{isPrivacy ? `${trail.doneModuleIds.size}/${trail.modules.length}` : `${solvedIds.size}/${labs.length}`}</span>
           </header>

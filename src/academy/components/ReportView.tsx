@@ -240,7 +240,7 @@ function ReportPrint({ doc }: Readonly<{ doc: ReportDoc }>) {
   const filt = [f.team && `equipe: ${f.team}`, f.situation && `situação: ${f.situation}`, f.q && `busca: "${f.q}"`].filter(Boolean).join(' · ') || 'sem filtros';
   return (
     <div id="report-print">
-      <div className="rp-head"><img src="/brand/cybershield-mark.svg" alt="" /><div><p className="rp-eyebrow">CyberShield DevSec Academy</p><h1>Relatório de desempenho do treinamento</h1></div></div>
+      <div className="rp-head"><img src="/brand/cybershield-logo.png" alt="CyberShield DevSec Academy" /><div><p className="rp-eyebrow">CyberShield DevSec Academy</p><h1>Relatório de desempenho do treinamento</h1></div></div>
       <p className="rp-draft">RASCUNHO PARA REVISÃO HUMANA · validar com Conformidade e DPO antes de uso como evidência de auditoria · contém dados pessoais</p>
       <table className="rp-meta"><tbody>
         <tr><th>Identificador</th><td className="mono">{doc.meta.reportId}</td><th>Gerado em</th><td>{fmtDate(doc.meta.generatedAt)}</td></tr>

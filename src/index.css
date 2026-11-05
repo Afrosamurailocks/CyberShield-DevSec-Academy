@@ -1,27 +1,27 @@
 @import "tailwindcss";
 
 /* ── Design tokens: identidade CyberShield ──────────────────────────────────
-   Paleta e tipografia do projeto: laranja #ee7d30 / #f4a23f sobre grafite #1e1e20;
+   Paleta e tipografia do projeto: azul #2f8bff / ciano #4cc3ff e prata sobre azul-marinho #0b1019 (paleta da logo);
    Poppins (titulos), Open Sans (texto), JetBrains Mono (codigo e protocolo).
-   Semantica preservada: laranja = acao/ofensiva, verde = defesa (sucesso/flag).
-   Os tons de cinza (slate) foram remapeados para neutros de grafite. */
+   Semantica preservada: azul = acao/ofensiva, verde = defesa (sucesso/flag).
+   Os tons de cinza (slate) foram remapeados para neutros azulados. */
 @theme {
   --font-sans: 'Open Sans', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
   --font-display: 'Poppins', 'Open Sans', ui-sans-serif, system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 
-  --color-ink: #161618;
-  --color-surface: #1e1e20;
-  --color-surface-2: #27272b;
-  --color-line: #36363b;
-  --color-line-soft: #2a2a2e;
+  --color-ink: #0b1019;
+  --color-surface: #121926;
+  --color-surface-2: #1a2332;
+  --color-line: #2a3547;
+  --color-line-soft: #202a3a;
 
-  --color-offense: #ee7d30;
-  --color-offense-soft: #f4a23f;
+  --color-offense: #2f8bff;
+  --color-offense-soft: #4cc3ff;
   --color-defense: #35d6a0;
 
   /* Paleta semântica refinada: tons com luminosidade equivalente, menos saturados que o
-     default do Tailwind, para harmonizar com o laranja sobre grafite.
+     default do Tailwind, para harmonizar com o azul sobre azul-marinho.
      rose = perigo/falha · amber = atenção · sky = informação · emerald = defesa. */
   --color-rose-200: #f9c3cb;  --color-rose-300: #f4a0ac;  --color-rose-400: #ec7a8b;  --color-rose-500: #e0566b;
   --color-red-300: #f5a79a;   --color-red-400: #ee8472;   --color-red-500: #e4604f;
@@ -40,17 +40,17 @@
   --color-m-put: #52a8ff;
   --color-m-delete: #ff5f6e;
 
-  --color-slate-50: #fafafa;
-  --color-slate-100: #f1f1f2;
-  --color-slate-200: #e2e2e4;
-  --color-slate-300: #c9c9cc;
-  --color-slate-400: #9a9aa0;
-  --color-slate-500: #6b6b70;
-  --color-slate-600: #55555a;
-  --color-slate-700: #3d3d42;
-  --color-slate-800: #2d2d30;
-  --color-slate-900: #1f1f22;
-  --color-slate-950: #161618;
+  --color-slate-50: #f8f9fc;
+  --color-slate-100: #eef1f7;
+  --color-slate-200: #dfe4ee;
+  --color-slate-300: #c5cddb;
+  --color-slate-400: #94a0b4;
+  --color-slate-500: #66728a;
+  --color-slate-600: #4d586d;
+  --color-slate-700: #384255;
+  --color-slate-800: #262f40;
+  --color-slate-900: #141b28;
+  --color-slate-950: #0b1019;
 }
 
 @layer base {
@@ -76,12 +76,12 @@
   }
 }
 
-/* Fundo da aplicação: grafite com um halo laranja muito sutil no canto superior (identidade visual) */
+/* Fundo da aplicação: azul-marinho com um halo azul muito sutil no canto superior (identidade visual) */
 .app-bg {
   background-color: var(--color-ink);
   background-image:
-    radial-gradient(900px 380px at 12% -80px, rgba(238, 125, 48, 0.09), transparent 70%),
-    radial-gradient(700px 320px at 100% 0, rgba(75, 151, 216, 0.05), transparent 70%);
+    radial-gradient(900px 380px at 12% -80px, rgba(47, 139, 255, 0.12), transparent 70%),
+    radial-gradient(700px 320px at 100% 0, rgba(76, 195, 255, 0.05), transparent 70%);
   background-repeat: no-repeat;
 }
 
@@ -93,14 +93,14 @@
 /* Scrollbars discretas, estilo painel de ferramenta */
 ::-webkit-scrollbar { width: 9px; height: 9px; }
 ::-webkit-scrollbar-track { background: var(--color-ink); }
-::-webkit-scrollbar-thumb { background: #3d3d42; border-radius: 6px; border: 2px solid var(--color-ink); }
-::-webkit-scrollbar-thumb:hover { background: #55555a; }
+::-webkit-scrollbar-thumb { background: #384255; border-radius: 6px; border: 2px solid var(--color-ink); }
+::-webkit-scrollbar-thumb:hover { background: #4d586d; }
 
 /* Skip link: aparece apenas com foco de teclado */
 .skip-link {
   position: absolute; left: 12px; top: -48px; z-index: 60;
   padding: 8px 14px; border-radius: 8px; font-weight: 700; font-size: 13px;
-  background: var(--color-offense); color: #161618; transition: top .15s ease;
+  background: var(--color-offense); color: #06101f; transition: top .15s ease;
 }
 .skip-link:focus { top: 12px; }
 
@@ -150,12 +150,12 @@
   body.report-print > #root { display: none !important; }
   body.report-print { background: #fff !important; }
   body.report-print #report-print { display: block !important; color: #1e1e20; font: 9pt/1.4 'Open Sans', Arial, sans-serif; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-  #report-print .rp-head { display: flex; align-items: center; gap: 14px; background: #1e1e20; color: #fff; padding: 10px 14px; border-bottom: 3px solid #ee7d30; }
-  #report-print .rp-head img { height: 28px; width: 28px; }
-  #report-print .rp-eyebrow { margin: 0; font-size: 8pt; letter-spacing: .08em; text-transform: uppercase; color: #f4a23f; }
+  #report-print .rp-head { display: flex; align-items: center; gap: 14px; background: #0b1019; color: #fff; padding: 10px 14px; border-bottom: 3px solid #2f8bff; }
+  #report-print .rp-head img { height: 40px; width: auto; }
+  #report-print .rp-eyebrow { margin: 0; font-size: 8pt; letter-spacing: .08em; text-transform: uppercase; color: #4cc3ff; }
   #report-print h1 { margin: 0; font: 600 15pt/1.2 Poppins, Arial, sans-serif; color: #fff; }
-  #report-print h2 { margin: 14px 0 5px; font: 600 11pt/1.2 Poppins, Arial, sans-serif; color: #1e1e20; border-left: 3px solid #ee7d30; padding-left: 7px; break-after: avoid; }
-  #report-print .rp-draft { margin: 6px 0; padding: 4px 8px; background: #fff4e5; border: 1px solid #f4a23f; color: #7a3d00; font-size: 8pt; font-weight: 600; }
+  #report-print h2 { margin: 14px 0 5px; font: 600 11pt/1.2 Poppins, Arial, sans-serif; color: #1e1e20; border-left: 3px solid #2f8bff; padding-left: 7px; break-after: avoid; }
+  #report-print .rp-draft { margin: 6px 0; padding: 4px 8px; background: #fff4e5; border: 1px solid #4cc3ff; color: #7a3d00; font-size: 8pt; font-weight: 600; }
   #report-print table { width: 100%; border-collapse: collapse; }
   #report-print th, #report-print td { border: 1px solid #c9c9cc; padding: 3px 5px; text-align: left; vertical-align: top; }
   #report-print thead th { background: #eeeeef; font-size: 7.5pt; text-transform: uppercase; letter-spacing: .03em; }

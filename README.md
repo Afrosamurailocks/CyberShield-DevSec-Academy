@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="public/brand/cybershield-mark.svg" alt="Marca CyberShield" width="96" />
+<img src="docs/screenshots/banner.png" alt="CyberShield DevSec Academy" width="100%" />
 
 # CyberShield DevSec Academy
 
@@ -11,10 +11,11 @@
 ![Express](https://img.shields.io/badge/Express-4-000000?logo=express&logoColor=white)
 ![TypeScript](https://img.shields.io/badge/TypeScript-7-3178C6?logo=typescript&logoColor=white)
 ![Tailwind](https://img.shields.io/badge/Tailwind-4-06B6D4?logo=tailwindcss&logoColor=white)
-![OWASP](https://img.shields.io/badge/OWASP-Top%2010%202025-red)
-![Trilhas](https://img.shields.io/badge/trilhas-6-orange)
+![OWASP](https://img.shields.io/badge/OWASP-Top%2010%202025-0b1019)
+![Trilhas](https://img.shields.io/badge/trilhas-6-2f8bff)
 ![Testes](https://img.shields.io/badge/testes-106%20%2B%2044-brightgreen)
 ![Rascunho](https://img.shields.io/badge/conte%C3%BAdo-rascunho%20para%20revis%C3%A3o-yellow)
+![Licen%C3%A7a](https://img.shields.io/badge/licen%C3%A7a-%5Bdefinir%5D-lightgrey)
 
 ![Visão geral](docs/screenshots/visao-geral.jpg)
 
@@ -30,6 +31,7 @@
 
 - [Visão geral](#visão-geral)
 - [Em imagens](#em-imagens)
+- [Identidade visual](#identidade-visual)
 - [A jornada Security Champion](#a-jornada-security-champion)
 - [Novidades desta versão](#novidades-desta-versão)
 - [Quick start](#quick-start)
@@ -59,7 +61,7 @@
 | **Progresso** | Quizzes e labs: UI no `localStorage`. **Selo:** registrado e assinado no servidor (ver [Jornada e selo](#jornada-e-selo-security-champion)) |
 | **Banco** | SQLite em memória para os labs (zero setup); Postgres/Supabase opcional. Registro do selo em `data/` (arquivo JSON) |
 | **Acesso e conformidade** | Login local, 4 perfis, relatório (Excel, JSON assinado, PDF) e trilha de auditoria com hash encadeado |
-| **Identidade visual** | CyberShield (Poppins/Open Sans/JetBrains Mono, fontes locais em `public/fonts`; laranja `#ee7d30` / grafite `#1e1e20`) |
+| **Identidade visual** | Logo CyberShield DevSec Academy; azul `#2f8bff` e ciano `#4cc3ff` sobre azul-marinho `#0b1019` (ver [Identidade visual](#identidade-visual)); Poppins, Open Sans e JetBrains Mono, fontes locais em `public/fonts` |
 
 ### Números do conteúdo
 
@@ -77,6 +79,27 @@ Capturas do ambiente local de testes (dados fictícios).
 | ![Trilha ISO](docs/screenshots/trilha-iso.jpg)<br>**Trilha ISO 27001:** módulos, cenários e duração estimada | ![Usuários](docs/screenshots/acesso-usuarios.jpg)<br>**Usuários e perfis** (Aluno, Gestor, Auditor, Admin) |
 | ![Laboratório de prompts](docs/screenshots/lab-prompts.jpg)<br>**Laboratório de prompts:** assistente simulado e flag | ![Relatório](docs/screenshots/relatorio-desempenho.jpg)<br>**Relatório de desempenho** com Excel, JSON assinado e PDF |
 | ![Jornada](docs/screenshots/jornada-champion.jpg)<br>**Jornada Security Champion:** rota e selo | ![Auditoria](docs/screenshots/trilha-auditoria.jpg)<br>**Trilha de auditoria** encadeada por hash |
+
+## Identidade visual
+
+A marca é um escudo com cadeado e circuito, um anel em azul e o nome em prata e azul. A interface, o relatório (Excel e PDF), o selo e este README usam a mesma paleta.
+
+| Elemento | Valor | Uso |
+|----------|-------|-----|
+| Azul marca | `#2f8bff` | ações, foco, destaques, filetes e cabeçalhos |
+| Ciano | `#4cc3ff` | degradês, barras de dados e detalhes |
+| Azul-marinho | `#0b1019` | fundo da aplicação e faixa do relatório |
+| Painel | `#121926` | cartões e menu lateral |
+| Prata | `#c5cddb` | texto secundário e linhas |
+| Verde defesa | `#35d6a0` | sucesso, flag capturada e "aprovado" |
+
+| Arquivo | Onde é usado |
+|---------|--------------|
+| `public/brand/cybershield-logo.png` | login, menu lateral e cabeçalho do relatório impresso (fundo escuro) |
+| `public/brand/cybershield-mark.png` | planilha Excel e credencial do selo |
+| `public/brand/favicon.png` | ícone da aba do navegador |
+
+> A logo tem texto claro e brilho, pensada para fundo escuro. Por isso o README e o PDF a mostram sobre faixa azul-marinho.
 
 ## A jornada Security Champion
 
@@ -285,7 +308,7 @@ flowchart LR
 ![Relatório de desempenho](docs/screenshots/relatorio-desempenho.jpg)
 
 **Relatório de desempenho** (menu "Conformidade"): KPIs, conclusão por trilha, por equipe e por pessoa (situação: Aprovado, Final pendente, Em andamento, Não iniciado), filtros e detalhe por trilha com datas de conclusão.
-- **Excel (.xlsx)** no padrão visual do projeto: abas Resumo (indicadores com fórmulas), Treinamentos (ficha básica de cada trilha: referência, formato, módulos, itens e avaliação final), Pessoas (filtros, cabeçalho congelado, cores por situação), Detalhe por trilha (formato longo, bom para tabela dinâmica) e Critérios e limites; painel com cartões de KPI e barras de dados, pronto para imprimir em A4 paisagem. **JSON assinado** (HMAC-SHA256 do conteúdo canônico, verificável pela interface; qualquer alteração é detectada) e **PDF** pela impressão do navegador (A4 paisagem, cabeçalho com a marca, id/hash/assinatura, rodapé de rascunho).
+- **Excel (.xlsx)** no padrão visual do projeto (azul-marinho e azul, com a marca): abas Resumo (indicadores com fórmulas), Treinamentos (ficha básica de cada trilha: referência, formato, módulos, itens e avaliação final), Pessoas (filtros, cabeçalho congelado, cores por situação), Detalhe por trilha (formato longo, bom para tabela dinâmica) e Critérios e limites; painel com cartões de KPI e barras de dados, pronto para imprimir em A4 paisagem. **JSON assinado** (HMAC-SHA256 do conteúdo canônico, verificável pela interface; qualquer alteração é detectada) e **PDF** pela impressão do navegador (A4 paisagem, cabeçalho com a marca, id/hash/assinatura, rodapé de rascunho).
 - Só conta o que o servidor validou. **Limite:** apenas acertos e suas datas são registrados (sem tentativas, erros ou tempo de estudo). A assinatura prova integridade desde a geração, não aderência a uma norma.
 
 ![Trilha de auditoria](docs/screenshots/trilha-auditoria.jpg)

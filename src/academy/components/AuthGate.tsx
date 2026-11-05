@@ -16,7 +16,7 @@ function Shell({ title, subtitle, children }: Readonly<{ title: string; subtitle
   return (
     <div className="app-bg flex min-h-screen items-center justify-center px-4 py-10 text-slate-100">
       <main className="w-full max-w-md">
-        <div className="mb-6 flex items-center gap-3"><img src="/brand/cybershield-mark.svg" alt="" aria-hidden="true" className="h-10 w-10" /><div><p className="text-lg font-semibold leading-tight">CyberShield</p><p className="text-xs leading-tight text-slate-400">DevSec Academy</p></div></div>
+        <img src="/brand/cybershield-logo.png" alt="CyberShield DevSec Academy" className="mb-6 h-24 w-auto" />
         <div className="rounded-lg border border-[var(--color-line)] bg-[var(--color-surface)] p-6 shadow-xl sm:p-8">
           <h1 className="text-xl font-semibold">{title}</h1>
           <p className="mt-1 text-sm text-slate-400">{subtitle}</p>
